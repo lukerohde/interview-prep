@@ -2,6 +2,9 @@ import os
 import json
 from openai import OpenAI
 from typing import List, Dict
+from django.conf import settings
+import re
+       
 
 def call_openai(system_prompt: str, user_prompt: str) -> str:
     """
@@ -13,7 +16,15 @@ def call_openai(system_prompt: str, user_prompt: str) -> str:
     
     Returns:
         str: The response from OpenAI.
+    
+    Raises:
+        Exception: If called during tests without being mocked.
     """
+    
+    # In test environment, this function must be mocked.  Playing it safe. 
+    if getattr(settings, 'TESTING', False):
+        raise Exception("THIS SHOULD BE MOCKED IN TESTS")
+    
     client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
     response = client.chat.completions.create(
         model="gpt-4o-mini",
@@ -48,7 +59,7 @@ def generate_interview_questions(job_description: str, resume: str, existing_que
     For each question, provide:
     - The question text
     - The category it belongs to
-    - A suggested approach or key points for answering (in STAR format where applicable)
+    - A suggested approach or key points for answering (in STAR format where applicable), given the user's resume and job description
     
     Ensure questions are specific to the job and candidate's background.
     Format the response as a JSON array of objects with 'question', 'category', and 'suggested_answer' keys.
@@ -69,9 +80,47 @@ def generate_interview_questions(job_description: str, resume: str, existing_que
     """
     
     response = call_openai(system_prompt, user_prompt)
+    data = extract_json(response)
+    return data
+
+def extract_json(text: str) -> List[Dict]:
+    """
+    Extract JSON from a string that might contain markdown code blocks.
+    The JSON could be directly in the string or within ```json blocks.
+    
+    Parameters:
+        text (str): The text containing JSON data
+        
+    Returns:
+        List[Dict]: Parsed JSON data or empty list if no valid JSON found
+    """
+    # First try to parse the entire response as JSON
     try:
-        questions = json.loads(response)
-        return questions
+        return json.loads(text)
     except json.JSONDecodeError:
-        # If the response isn't valid JSON, try to extract questions manually or return empty list
-        return []
+        pass
+    
+    # Look for JSON in code blocks
+    # Match content between ```json and ``` or between ``` and ``` if it looks like JSON
+    json_block_pattern = r'```(?:json)?\s*([\s\S]*?)\s*```'
+    matches = re.finditer(json_block_pattern, text)
+    
+    for match in matches:
+        try:
+            json_str = match.group(1).strip()
+            return json.loads(json_str)
+        except json.JSONDecodeError:
+            continue
+    
+    # If we still haven't found valid JSON, try to find anything between square brackets
+    # that might be a JSON array
+    array_pattern = r'\[\s*{[\s\S]*?}\s*\]'
+    matches = re.finditer(array_pattern, text)
+    
+    for match in matches:
+        try:
+            return json.loads(match.group(0))
+        except json.JSONDecodeError:
+            continue
+    
+    return []

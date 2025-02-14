@@ -62,9 +62,7 @@ def test_application_create_view_with_questions(authenticated_client, user, mock
     }
     
     # Mock the OpenAI call
-    with patch('main.view_application.generate_interview_questions') as mock_generate:
-        mock_generate.return_value = mock_openai_response
-        
+    with patch('main.ai_helpers.call_openai', return_value=json.dumps(mock_openai_response)):
         before_count = Application.objects.count()
         response = authenticated_client.post(reverse('main:application_create'), data)
         
@@ -102,7 +100,7 @@ def test_application_create_view_openai_error(authenticated_client, user):
     }
     
     # Mock OpenAI call to raise an exception
-    with patch('main.view_application.generate_interview_questions') as mock_generate:
+    with patch('main.models.generate_interview_questions') as mock_generate:
         mock_generate.side_effect = Exception("OpenAI API error")
         
         before_count = Application.objects.count()
@@ -139,9 +137,7 @@ def test_application_edit_view_with_questions(authenticated_client, user, mock_o
     }
     
     # Mock OpenAI call
-    with patch('main.view_application.generate_interview_questions') as mock_generate:
-        mock_generate.return_value = mock_openai_response
-        
+    with patch('main.ai_helpers.call_openai', return_value=json.dumps(mock_openai_response)):
         response = authenticated_client.post(
             reverse('main:application_edit', kwargs={'pk': application.pk}),
             data
@@ -180,9 +176,7 @@ def test_application_edit_view_openai_error(authenticated_client, user):
     }
     
     # Mock OpenAI call to raise an exception
-    with patch('main.view_application.generate_interview_questions') as mock_generate:
-        mock_generate.side_effect = Exception("OpenAI API error")
-        
+    with patch('main.ai_helpers.call_openai', side_effect=Exception("OpenAI API error")):
         response = authenticated_client.post(
             reverse('main:application_edit', kwargs={'pk': application.pk}),
             data
@@ -258,3 +252,82 @@ def test_other_user_access(authenticated_client, user):
     response = authenticated_client.post(reverse('main:application_delete', kwargs={'pk': other_application.pk}))
     assert response.status_code == 404
     assert Application.objects.filter(pk=other_application.pk).exists()
+    
+    # Test cannot generate questions for other user's application
+    response = authenticated_client.post(reverse('main:generate_questions', kwargs={'pk': other_application.pk}))
+    assert response.status_code == 404
+
+@pytest.mark.django_db
+def test_generate_questions_model_method(user, mock_openai_response):
+    """Test the generate_and_save_questions method on Application model"""
+    application = ApplicationFactory(owner=user)
+    
+    with patch('main.ai_helpers.call_openai', return_value=json.dumps(mock_openai_response)):
+        # Test generating questions
+        created_cards = application.generate_and_save_questions()
+        
+        # Verify cards were created
+        assert len(created_cards) == 2
+        
+        # Verify card content
+        for card in created_cards:
+            assert card.user == user
+            assert 'auto-generated' in card.tags
+            assert card.applications.filter(pk=application.pk).exists()
+            
+            # Verify question content matches mock data
+            matching_q = next(q for q in mock_openai_response if q['question'] == card.front)
+            assert card.back == matching_q['suggested_answer']
+            assert matching_q['category'] in card.tags
+
+@pytest.mark.django_db
+def test_generate_questions_endpoint(authenticated_client, user, mock_openai_response):
+    """Test the generate questions endpoint"""
+    application = ApplicationFactory(owner=user)
+    
+    with patch('main.ai_helpers.call_openai', return_value=json.dumps(mock_openai_response)):
+        # Make request to generate questions
+        response = authenticated_client.post(
+            reverse('main:generate_questions', kwargs={'pk': application.pk})
+        )
+        
+        # Verify redirect response
+        assert response.status_code == 302
+        assert response.url == reverse('main:application_detail', kwargs={'pk': application.pk})
+        
+        # Verify success message
+        messages = list(response.wsgi_request._messages)
+        assert len(messages) == 1
+        assert 'Generated 2 new questions!' in str(messages[0])
+        
+        # Verify cards were created
+        flashcards = application.flashcards.all()
+        assert flashcards.count() == 2
+        
+        # Check flashcard content
+        flashcard_questions = set(card.front for card in flashcards)
+        expected_questions = set(q['question'] for q in mock_openai_response)
+        assert flashcard_questions == expected_questions
+
+@pytest.mark.django_db
+def test_generate_questions_error_handling(authenticated_client, user):
+    """Test error handling in generate questions endpoint"""
+    application = ApplicationFactory(owner=user)
+    
+    with patch('main.ai_helpers.call_openai', side_effect=Exception('API Error')):
+        # Make request to generate questions
+        response = authenticated_client.post(
+            reverse('main:generate_questions', kwargs={'pk': application.pk})
+        )
+        
+        # Verify redirect response
+        assert response.status_code == 302
+        assert response.url == reverse('main:application_detail', kwargs={'pk': application.pk})
+        
+        # Verify error message
+        messages = list(response.wsgi_request._messages)
+        assert len(messages) == 1
+        assert 'Failed to generate new questions' in str(messages[0])
+        
+        # Verify no cards were created
+        assert application.flashcards.count() == 0

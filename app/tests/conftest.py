@@ -1,6 +1,10 @@
 # tests/conftest.py
 import pytest
 from playwright.sync_api import sync_playwright
+from django.conf import settings
+
+# Set TESTING flag for the test environment
+settings.TESTING = True
 
 @pytest.fixture(scope="session")
 def django_db_setup(django_db_setup, django_db_blocker):

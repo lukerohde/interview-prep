@@ -1,7 +1,10 @@
 from django.db import models
 from django.contrib.auth.models import User
-from .utils import do_something_handy
+from django.utils import timezone
 from uuid import uuid4
+from enum import Enum
+from .utils import do_something_handy
+from .ai_helpers import generate_interview_questions
 
 class Application(models.Model):
     STATUS_CHOICES = [
@@ -27,9 +30,36 @@ class Application(models.Model):
     class Meta:
         ordering = ['-updated_at']
 
-from django.utils import timezone
-from uuid import uuid4
-from enum import Enum
+    def get_existing_questions(self):
+        """Get existing auto-generated questions to avoid duplicates"""
+        return [
+            {'question': card.front, 'suggested_answer': card.back}
+            for card in self.flashcards.filter(tags__contains=['auto-generated'])
+        ]
+
+    def generate_and_save_questions(self):
+        """Generate and save new AI interview questions"""
+        existing_questions = self.get_existing_questions()
+        questions = generate_interview_questions(
+            job_description=self.job_description,
+            resume=self.resume,
+            existing_questions=existing_questions
+        )
+
+        created_cards = []
+        for q in questions:
+            flashcard = FlashCard.objects.create(
+                user=self.owner,
+                front=q['question'],
+                back=q['suggested_answer'],
+                tags=[q['category'], 'auto-generated']
+            )
+            flashcard.applications.add(self)
+            created_cards.append(flashcard)
+
+        return created_cards
+
+
 
 class ReviewStatus(str, Enum):
     FORGOT = 'forgot'

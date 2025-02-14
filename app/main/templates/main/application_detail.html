@@ -37,17 +37,34 @@
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
             <h5 class="card-title mb-0">Interview Questions</h5>
-            <button class="btn btn-primary btn-sm">
-              <i class="bi bi-plus-circle"></i> Add Question
-            </button>
+            <div class="btn-group">
+              <form method="post" action="{% url 'main:generate_questions' pk=application.pk %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-primary btn-sm">
+                  <i class="bi bi-robot"></i> Generate Questions
+                </button>
+              </form>
+              <button class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-circle"></i> Add Question
+              </button>
+            </div>
           </div>
           <div class="card-body">
-            {% if application.questions.all %}
+            {% if application.flashcards.all %}
               <div class="list-group">
-                {% for question in application.questions.all %}
+                {% for card in application.flashcards.all %}
                   <div class="list-group-item list-group-item-action">
                     <div class="d-flex w-100 justify-content-between align-items-center">
-                      <h6 class="mb-1">{{ question.text }}</h6>
+                      <div>
+                        <h6 class="mb-1">{{ card.front }}</h6>
+                        {% if card.tags %}
+                          <div class="mb-2">
+                            {% for tag in card.tags %}
+                              <span class="badge bg-secondary">{{ tag }}</span>
+                            {% endfor %}
+                          </div>
+                        {% endif %}
+                      </div>
                       <div class="btn-group">
                         <button class="btn btn-outline-primary btn-sm">
                           <i class="bi bi-pencil"></i>
@@ -57,14 +74,12 @@
                         </button>
                       </div>
                     </div>
-                    {% if question.answer %}
-                      <p class="mb-1 text-muted">{{ question.answer }}</p>
-                    {% endif %}
+                    <p class="mb-1 text-muted">{{ card.back }}</p>
                   </div>
                 {% endfor %}
               </div>
             {% else %}
-              <p class="text-muted mb-0">No questions added yet. Click the button above to add your first question.</p>
+              <p class="text-muted mb-0">No questions added yet. Click the button above to generate interview questions.</p>
             {% endif %}
           </div>
         </div>
@@ -90,3 +105,5 @@
     </div>
   </div>
 {% endblock %}
+
+

@@ -10,4 +10,5 @@ urlpatterns = [
     path('applications/<uuid:pk>/', view_application.application_detail, name='application_detail'),
     path('applications/<uuid:pk>/edit/', view_application.application_edit, name='application_edit'),
     path('applications/<uuid:pk>/delete/', view_application.application_delete, name='application_delete'),
-] 
+    path('applications/<uuid:pk>/generate-questions/', view_application.generate_questions, name='generate_questions'),
+]
