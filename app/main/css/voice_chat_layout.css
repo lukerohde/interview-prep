@@ -1,0 +1,64 @@
+/* Transcript */
+.transcript-container {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    height: calc(100vh - 350px);
+    overflow-y: auto;
+    transition: height 0.3s ease;
+}
+
+/* Review Area */
+.review-area {
+    background: var(--bs-white);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+}
+
+/* When review area is visible, adjust transcript container */
+.review-area:not(.d-none) + .transcript-container {
+    height: calc(100vh - 350px);
+}
+
+/* Desktop Sidebar */
+@media (min-width: 768px) {
+    #sidebar {
+        height: 100% !important;
+        margin: 0;
+    }
+
+    #sidebar .offcanvas-body {
+        height: 100%;
+        padding: 0;
+    }
+
+    #sidebar .bg-white {
+        height: 100%;
+        margin-right: -0.75rem;
+    }
+}
+
+
+
+/* Mobile Sidebar */
+@media (max-width: 768px) {
+    #sidebar {
+        width: 100%;
+        max-width: 320px;
+    }
+
+    .offcanvas-body {
+        padding: 0;
+    }
+
+    .review-area {
+        width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    .transcript-container {
+        padding-bottom: 1rem;
+    }
+}

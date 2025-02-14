@@ -1,0 +1,55 @@
+{% comment %}
+This partial is used to render a preview of a flashcard in the sidebar
+{% endcomment %}
+
+<div class="card mb-2 flashcard-preview flashcard border border-2" 
+     data-flashcard-id="{{ flashcard.id }}"
+     data-flashcard-front-value="{{ flashcard.front }}"
+     data-flashcard-back-value="{{ flashcard.back }}">
+  <div class="card-body p-2 position-relative">
+    <button class="btn btn-sm btn-outline-primary position-absolute top-0 end-0 mt-1 me-1" 
+            data-action="flashcard#playFullCard">
+      <i class="bi bi-play-fill"></i>
+    </button>
+    <div class="flashcard-content">
+      <div class="flashcard-front mb-1">
+        <small class="text-muted">Front:</small>
+        <div>{{ flashcard.front }}</div>
+      </div>
+      <div class="flashcard-back">
+        <small class="text-muted">Back:</small>
+        <div>{{ flashcard.back }}</div>
+      </div>
+    </div>
+    {% if flashcard.tags %}
+      <div class="flashcard-tags mb-2">
+        {% for tag in flashcard.tags %}
+          <span class="badge bg-secondary me-1">{{ tag }}</span>
+        {% endfor %}
+      </div>
+    {% endif %}
+    <div class="d-flex justify-content-between align-items-center">
+      <button class="btn btn-sm btn-link text-danger p-0" 
+              data-action="flashcard#deleteCard"
+              title="Delete flashcard">
+        <i class="bi bi-trash"></i>
+      </button>
+      <div class="flashcard-stats">
+        {% with total_reviews=flashcard.front_review_count|add:flashcard.back_review_count %}
+          <span class="badge bg-info me-1" title="Total Reviews">
+            <i class="bi bi-eye-fill"></i> {{ total_reviews }}
+          </span>
+        {% endwith %}
+        {% if flashcard.front_last_review or flashcard.back_last_review %}
+          {% with last_review=flashcard.front_last_review|default:flashcard.back_last_review %}
+            <span class="badge {% if flashcard.is_due_for_review %}bg-warning{% else %}bg-success{% endif %}" 
+                  title="Last Reviewed: {{ last_review|date:'Y-m-d H:i' }}">
+              <i class="bi bi-clock-fill"></i>
+              {{ last_review|timesince }}
+            </span>
+          {% endwith %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>

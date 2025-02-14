@@ -23,14 +23,14 @@ npm-build: up
 dev: up
 	docker-compose exec app npm run dev
 
-
 # Build the Docker containers
 build:
 	docker-compose build
 
 # Run the test suite
+# Usage: make test TEST_ARGS="-v -k test_name"
 test: up
-	docker-compose exec app pytest
+	docker-compose exec app pytest $(TEST_ARGS)
 
 # Run playwright tests in headed mode
 test-headed: up

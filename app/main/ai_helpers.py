@@ -61,6 +61,9 @@ def generate_interview_questions(job_description: str, resume: str, existing_que
     - The category it belongs to
     - A suggested approach or key points for answering (in STAR format where applicable), given the user's resume and job description
     
+    A good format for your suggested answer looks like this.  
+    `Provide an experience (Situation) related to team culture that needed improvement (Task), present your activities (Action), and show how these led to improved team dynamics (Result).`
+    
     Ensure questions are specific to the job and candidate's background.
     Format the response as a JSON array of objects with 'question', 'category', and 'suggested_answer' keys.
     """

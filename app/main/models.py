@@ -27,6 +27,10 @@ class Application(models.Model):
     def __str__(self):
         return f"{self.name} - {self.status}"
 
+    @property
+    def title(self):
+        return str(self)  # Uses the same format as __str__
+
     class Meta:
         ordering = ['-updated_at']
 

@@ -1,10 +1,12 @@
 from django.urls import path
 from . import view_application
+from . import view_voice_chat
 
 app_name = 'main'
 
 urlpatterns = [
     path('', view_application.application_list, name='application_list'),
+    path('voice-chat/session/', view_voice_chat.SessionAPIView.as_view(), name='session'),
     path('applications/', view_application.application_list, name='application_list'),
     path('applications/create/', view_application.application_create, name='application_create'),
     path('applications/<uuid:pk>/', view_application.application_detail, name='application_detail'),

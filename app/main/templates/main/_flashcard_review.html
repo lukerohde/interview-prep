@@ -1,0 +1,53 @@
+{% if card %}
+<div class="flashcard review-card" 
+     data-flashcard-id="{{ card.id }}"
+     data-flashcard-side="{{ side }}"
+     data-flashcard-front-value="{{ card.front }}"
+     data-flashcard-back-value="{{ card.back }}">
+    
+    <div class="review-stats text-muted small text-end mb-2">
+        Reviews: {% if side == 'front' %}{{ card.front_review_count }}{% else %}{{ card.back_review_count }}{% endif %}
+    </div>
+
+    <div class="card-content text-center mb-3">
+        {% if side == 'front' %}
+            <div class="japanese fs-4 mb-2">{{ card.front }}</div>
+            {% if show_both %}
+                <div class="english text-muted">{{ card.back }}</div>
+            {% endif %}
+        {% else %}
+            <div class="english fs-4 mb-2">{{ card.back }}</div>
+            {% if show_both %}
+                <div class="japanese text-muted">{{ card.front }}</div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <div class="review-buttons d-flex gap-2 flex-wrap justify-content-center">
+            <button class="btn btn-sm btn-primary" 
+                data-action="flashcard#reviewCard">
+            <i class="bi bi-play-fill"></i> Play
+        </button>
+        <button class="btn btn-sm btn-danger" 
+                data-action="flashcard#handleSelfAssessment"
+                data-status="forgot">
+            <i class="bi bi-x-lg"></i> Forgot
+        </button>
+        <button class="btn btn-sm btn-warning" 
+                data-action="flashcard#handleSelfAssessment"
+                data-status="hard">
+            <i class="bi bi-dash-lg"></i> Hard
+        </button>
+        <button class="btn btn-sm btn-success" 
+                data-action="flashcard#handleSelfAssessment"
+                data-status="easy">
+            <i class="bi bi-check-lg"></i> Easy
+        </button>
+    </div>
+</div>
+{% else %}
+<div class="text-center text-muted p-4">
+    <i class="bi bi-check-circle fs-1"></i>
+    <p class="mt-2">No cards due for review!</p>
+</div>
+{% endif %}

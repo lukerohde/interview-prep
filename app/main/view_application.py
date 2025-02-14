@@ -28,7 +28,11 @@ def application_list(request):
 @login_required
 def application_detail(request, pk):
     application = get_object_or_404(Application, pk=pk, owner=request.user)
-    return render(request, 'main/application_detail.html', {'application': application})
+    flashcards = application.flashcards.all()
+    return render(request, 'main/application_detail.html', {
+        'application': application,
+        'flashcards': flashcards
+    })
 
 @login_required
 def application_create(request):

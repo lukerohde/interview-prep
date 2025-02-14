@@ -204,9 +204,8 @@ def test_application_detail_view(authenticated_client, user):
     
     response = authenticated_client.get(reverse('main:application_detail', kwargs={'pk': application.pk}))
     assert response.status_code == 200
-    assert application.name in str(response.content)
-    assert application.get_status_display() in str(response.content)
-
+    assert application.title in str(response.content)
+    
 def test_unauthorized_access(client):
     user = UserFactory()
     application = ApplicationFactory(owner=user)

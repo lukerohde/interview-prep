@@ -1,5 +1,8 @@
 import { Application } from '@hotwired/stimulus'
-import ThingController from '../../main/js/controllers/thing_controller'
+import { showToast } from './utils/toast.js';
+import FlashcardController from '../../main/js/controllers/flashcard_controller'
+import VoiceChatController from '../../main/js/controllers/voice_chat_controller'
+import TranscriptController from '../../main/js/controllers/transcript_controller'
 
 console.log('Loading Stimulus application...')
 let application = null
@@ -29,7 +32,9 @@ if (!application) {
 }
 
 console.log('Registering controllers...')
-application.register('thing', ThingController)
+application.register('flashcard', FlashcardController)
+application.register('voice-chat', VoiceChatController)
+application.register('transcript', TranscriptController)
 console.log('Controllers registered successfully')
 
 

@@ -1,0 +1,119 @@
+@media (max-width: 767.98px) {
+  .position-absolute {
+    top: 50% !important;
+    transform: translateY(-50%);
+  }
+}
+
+.voice-button {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  position: relative;
+  border: 2px solid;
+  background: white;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.voice-button i {
+  font-size: 1.5rem;
+  position: absolute;
+  transition: all 0.15s ease;
+}
+
+/* Button States */
+.voice-button[data-state="disconnected"] i,
+.voice-button[data-state="error"] i {
+  color: var(--bs-danger);
+}
+
+.voice-button[data-state="connecting"] i {
+  /* Switch icon to telephone-outbound when connecting */
+  &::before {
+    content: "\F5BC"; /* bi-telephone-outbound */
+  }
+  color: var(--bs-warning);
+}
+
+.voice-button[data-state="connected"] i {
+  /* Switch icon to mic-mute when connected/muted */
+  &::before {
+    content: "\F48F"; /* bi-mic-mute */
+  }
+  color: var(--bs-gray-600);
+}
+
+.voice-button.active i {
+  /* Switch icon to regular mic when active/unmuted */
+  &::before {
+    content: "\F490"; /* bi-mic */
+  }
+  color: white;
+}
+
+/* Hover and active states */
+.voice-button:hover {
+  transform: scale(1.05);
+}
+
+.voice-button:active {
+  transform: scale(0.95);
+}
+
+.voice-button.active {
+  background-color: var(--bs-success);
+  border-color: var(--bs-success);
+}
+
+/* Active state */
+.voice-button.active {
+  background-color: var(--bs-success);
+  border-color: var(--bs-success);
+}
+
+.voice-button.active i {
+  color: white !important;
+}
+
+/* Hover effects */
+.voice-button:hover {
+  transform: scale(1.05);
+}
+
+.voice-button:active {
+  transform: scale(0.95);
+}
+
+/* Status text */
+.voice-status {
+  font-size: 0.875rem;
+  color: var(--bs-gray-600);
+  margin-bottom: 0.5rem;
+  text-align: left;
+  background: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  white-space: nowrap;
+}
+
+/* Mic select styling */
+.mic-select-container {
+  margin-bottom: 1rem;
+}
+
+.mic-select-container label {
+  font-size: 0.875rem;
+  color: var(--bs-gray-600);
+  margin-bottom: 0.25rem;
+}

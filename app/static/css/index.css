@@ -1,5 +1,7 @@
 /* Import module-specific styles */
-@import "../../main/css/thing.css";
+@import "../../main/css/voice_chat_layout.css";
+@import "../../main/css/voice_chat_microphone.css";
+@import "../../main/css/transcript.css";
 
 /* Base variables */
 :root {
