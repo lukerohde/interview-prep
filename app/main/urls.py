@@ -4,10 +4,10 @@ from . import views
 app_name = 'main'
 
 urlpatterns = [
-    path('', views.thing_list, name='thing_list'),
-    path('things/', views.thing_list, name='thing_list'),
-    path('things/create/', views.thing_create, name='thing_create'),
-    path('things/<uuid:pk>/', views.thing_detail, name='thing_detail'),
-    path('things/<uuid:pk>/edit/', views.thing_edit, name='thing_edit'),
-    path('things/<uuid:pk>/delete/', views.thing_delete, name='thing_delete'),
+    path('', views.application_list, name='application_list'),
+    path('applications/', views.application_list, name='application_list'),
+    path('applications/create/', views.application_create, name='application_create'),
+    path('applications/<uuid:pk>/', views.application_detail, name='application_detail'),
+    path('applications/<uuid:pk>/edit/', views.application_edit, name='application_edit'),
+    path('applications/<uuid:pk>/delete/', views.application_delete, name='application_delete'),
 ] 

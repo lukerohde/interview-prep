@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .models import Thing
-from .forms import ThingForm
+from .models import Application
+from .forms import ApplicationForm
 import requests
 from django.views.decorators.http import require_POST
 from django.contrib import messages
@@ -18,47 +18,50 @@ import logging
 logger = logging.getLogger(__name__)
 
 @login_required
-def thing_list(request):
-    things = Thing.objects.filter(owner=request.user)
-    return render(request, 'main/thing_list.html', {'things': things})
+def application_list(request):
+    applications = Application.objects.filter(owner=request.user)
+    if not applications.exists():
+        messages.info(request, "Create your first job application!")
+        return redirect('main:application_create')
+    return render(request, 'main/application_list.html', {'applications': applications})
 
 @login_required
-def thing_detail(request, pk):
-    thing = get_object_or_404(Thing, pk=pk, owner=request.user)
-    return render(request, 'main/thing_detail.html', {'thing': thing})
+def application_detail(request, pk):
+    application = get_object_or_404(Application, pk=pk, owner=request.user)
+    return render(request, 'main/application_detail.html', {'application': application})
 
 @login_required
-def thing_create(request):
+def application_create(request):
     if request.method == 'POST':
-        form = ThingForm(request.POST)
+        form = ApplicationForm(request.POST)
         if form.is_valid():
-            thing = form.save(commit=False)
-            thing.owner = request.user
-            thing.save()
-            messages.success(request, "Thing created successfully!")
-            return redirect('main:thing_detail', pk=thing.pk)
+            application = form.save(commit=False)
+            application.owner = request.user
+            application.save()
+            messages.success(request, "Application created successfully!")
+            return redirect('main:application_detail', pk=application.pk)
     else:
-        form = ThingForm()
-    return render(request, 'main/thing_form.html', {'form': form})
+        form = ApplicationForm()
+    return render(request, 'main/application_form.html', {'form': form})
 
 @login_required
-def thing_edit(request, pk):
-    thing = get_object_or_404(Thing, pk=pk, owner=request.user)
+def application_edit(request, pk):
+    application = get_object_or_404(Application, pk=pk, owner=request.user)
     if request.method == 'POST':
-        form = ThingForm(request.POST, instance=thing)
+        form = ApplicationForm(request.POST, instance=application)
         if form.is_valid():
             form.save()
-            messages.success(request, "Thing updated successfully!")
-            return redirect('main:thing_detail', pk=thing.pk)
+            messages.success(request, "Application updated successfully!")
+            return redirect('main:application_detail', pk=application.pk)
     else:
-        form = ThingForm(instance=thing)
-    return render(request, 'main/thing_form.html', {'form': form})
+        form = ApplicationForm(instance=application)
+    return render(request, 'main/application_form.html', {'form': form})
 
 @login_required
-def thing_delete(request, pk):
-    thing = get_object_or_404(Thing, pk=pk, owner=request.user)
+def application_delete(request, pk):
+    application = get_object_or_404(Application, pk=pk, owner=request.user)
     if request.method == 'POST':
-        thing.delete()
-        messages.success(request, "Thing deleted successfully!")
-        return redirect('main:thing_list')
-    return render(request, 'main/thing_confirm_delete.html', {'thing': thing})
+        application.delete()
+        messages.success(request, "Application deleted successfully!")
+        return redirect('main:application_list')
+    return render(request, 'main/application_confirm_delete.html', {'application': application})

@@ -7,6 +7,16 @@ Features:
 - Voice chat with an AI interviewer to draft STAR format answers for likely questions
 - Get hired and profit!
 
+## Target state tech architecture
+- Uses OpenAI RealTime API for voice communication
+- Server-side rendering with Django templates
+- StimulusJS for interactive components
+    - Voice Chat Controller
+    - Flash Card Controller
+    - Transcription Controller
+- Asset bundling with NPM and Parcel
+- Bootstrap 5 for responsive layou
+
 ## Setup
 
 Run the setup script to configure your project name and `.env` plus `docker-compose.override.yml` for local development.

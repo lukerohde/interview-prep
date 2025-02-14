@@ -1,7 +1,7 @@
 # tests/factories.py
 import factory
 from django.contrib.auth.models import User
-from main.models import Thing
+from main.models import Application
 
 class UserFactory(factory.django.DjangoModelFactory):
     class Meta:
@@ -20,9 +20,12 @@ class UserFactory(factory.django.DjangoModelFactory):
         if create:
             obj.save()
 
-class ThingFactory(factory.django.DjangoModelFactory):
+class ApplicationFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = Thing
+        model = Application
     
     owner = factory.SubFactory(UserFactory)
-    name = factory.Sequence(lambda n: f"Thing {n}")
+    name = factory.Sequence(lambda n: f"Software Engineer {n}")
+    status = 'draft'
+    resume = factory.Sequence(lambda n: f"Resume content for application {n}")
+    job_description = factory.Sequence(lambda n: f"Job description for position {n}")
