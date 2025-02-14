@@ -44,8 +44,9 @@ def test_application_create_view(authenticated_client, user):
         'job_description': 'Job description content'
     }
     
+    before_count = Application.objects.count()
     response = authenticated_client.post(reverse('main:application_create'), data)
-    assert Application.objects.count() == 1
+    assert Application.objects.count() == before_count + 1
     application = Application.objects.first()
     assert application.owner == user
     assert application.name == data['name']
@@ -74,8 +75,9 @@ def test_application_edit_view(authenticated_client, user):
 def test_application_delete_view(authenticated_client, user):
     application = ApplicationFactory(owner=user)
     
+    before_count = Application.objects.count()
     response = authenticated_client.post(reverse('main:application_delete', kwargs={'pk': application.pk}))
-    assert Application.objects.count() == 0
+    assert Application.objects.count() == before_count - 1
     assert response.status_code == 302
     assert response.url == reverse('main:application_list')
 
