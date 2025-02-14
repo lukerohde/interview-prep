@@ -7,8 +7,8 @@
      data-controller="voice-chat flashcard" 
      data-voice-chat-auto-connect-value="true" 
      data-voice-chat-session-url-value="{% url 'main:session' %}" 
-     data-action="voice-chat:function-call->flashcard#handleFunctionCall 
-                  flashcard:register-tool->voice-chat#registerTool 
+     data-action="voice-chat:prompts-available->flashcard#handlePromptsAvailable 
+                  voice-chat:function-call->flashcard#handleFunctionCall 
                   flashcard:add-context->voice-chat#addContext 
                   flashcard:please-respond->voice-chat#pleaseRespond">
   <div class="row h-100 g-0 px-3 pt-3">

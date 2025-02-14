@@ -7,6 +7,7 @@ app_name = 'main'
 urlpatterns = [
     path('', view_application.application_list, name='application_list'),
     path('voice-chat/session/', view_voice_chat.SessionAPIView.as_view(), name='session'),
+    path('flashcard/next/', view_flashcard.next_review, name='flashcard_next'),
     path('applications/', view_application.application_list, name='application_list'),
     path('applications/create/', view_application.application_create, name='application_create'),
     path('applications/<uuid:pk>/', view_application.application_detail, name='application_detail'),

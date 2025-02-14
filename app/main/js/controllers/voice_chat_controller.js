@@ -5,8 +5,7 @@ export default class extends Controller {
   static values = {
     sessionUrl: String,
     autoConnect: Boolean,
-    baseUrl: { type: String, default: 'https://api.openai.com/v1/realtime' },
-    model: { type: String, default: 'gpt-4o-realtime-preview-2024-12-17' }
+    baseUrl: { type: String, default: 'https://api.openai.com/v1/realtime' }
   }
 
   registeredTools = []
@@ -108,8 +107,21 @@ export default class extends Controller {
     if (data.error) {
       throw new Error(data.error);
     }
-    
     this.ephemeralKey = data.client_secret;
+    
+    // Register tools directly and emit prompts
+    if (data.tools) {
+      Object.values(data.tools).forEach(tool => {
+        this.registeredTools.push(tool);
+      });
+      if (this.isConnected && this.dc) {
+        this.updateTools();
+      }
+    }
+    if (data.prompts) {
+      this.dispatch('prompts-available', { detail: data.prompts });
+    }
+    
     this.updateStatus('Session token received', 'success');
   }
 

@@ -1,11 +1,13 @@
 import os
 import json
+import yaml
 import logging
 import requests
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from django.conf import settings
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -27,28 +29,33 @@ class SessionAPIView(APIView):
             }
             
             url = 'https://api.openai.com/v1/realtime/sessions'
-            data = {
-                'model': 'gpt-4o-mini-realtime-preview-2024-12-17',
-                'modalities': ['text', 'audio'],
-                'instructions': 'You are an english speaking japanese tutor. You use simple language. You help review flash cards, and help draft flash cards. You will also role play. And discuss japanese language matters as the user desires.  Keep everything you say terse, natural and conversational.',
-                'voice': 'ballad',
-                'input_audio_format': 'pcm16',
-                'output_audio_format': 'pcm16',
-                "input_audio_transcription": {
-                   "model": "whisper-1",
-                }, 
-                'temperature': 0.8
+            # Load configuration from YAML
+            yaml_path = Path(__file__).parent.parent / 'voice-chat-prompt.yaml'
+            with open(yaml_path, 'r') as f:
+                config = yaml.safe_load(f)
+
+            # Prepare session data from YAML config
+            data = config['session']
+            
+            # Prepare our config data
+            config_data = {
+                'tools': config['tools'],
+                'prompts': config['prompts']
             }
 
             logger.debug(f'Making request to {url}')
             response = requests.post(url, headers=headers, json=data)
             response.raise_for_status()
             
+            # Get OpenAI response and merge with our config
             response_data = response.json()
             logger.debug('Session response received')
             
             if 'client_secret' in response_data:
-                return Response({'client_secret': response_data['client_secret']['value']})
+                # Merge OpenAI response with our config
+                response_data.update(config_data)
+                response_data['client_secret'] = response_data['client_secret']['value']
+                return Response(response_data)
             else:
                 return Response({"error": "No client secret in response"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 

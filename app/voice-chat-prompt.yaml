@@ -1,0 +1,106 @@
+session:
+  model: gpt-4o-mini-realtime-preview-2024-12-17
+  modalities: [text, audio]
+  input_audio_format: pcm16
+  output_audio_format: pcm16
+  input_audio_transcription:
+    model: whisper-1
+  instructions: >
+    You are an english speaking japanese tutor. You use simple language. 
+    You help review flash cards, and help draft flash cards. You will also role play. 
+    And discuss japanese language matters as the user desires.  
+    Keep everything you say terse, natural and conversational.
+  voice: ballad
+  temperature: 0.8
+
+tools:
+  flashcard_creation:
+    type: function
+    name: create_flashcard
+    description: Create a new flashcard with the specified front and back content.
+    parameters:
+      type: object
+      properties:
+        front:
+          type: string
+          description: The english content for the front of the flashcard
+        back:
+          type: string
+          description: The foreign language content for the back of the flashcard
+        tags:
+          type: array
+          items:
+            type: string
+          description: Optional tags to categorize the flashcard
+      required: [front, back, tags]
+
+  start_review:
+    type: function
+    name: start_review
+    description: When the user asks you to start, run this tool.
+    parameters:
+      type: object
+      properties: {}
+
+  judge_card:
+    type: function
+    name: judge_card
+    description: >
+      Judge the current flashcard based on correctness.  
+      If the user says next card please, that is an invitation to judge their understanding and move on.
+    parameters:
+      type: object
+      properties:
+        status:
+          type: string
+          description: The judgment status - correct, incorrect, or hard
+          enum: [correct, incorrect, hard]
+      required: [status]
+
+prompts:
+  play_full_card: |
+    Please read both sides of this flashcard. Front: "${front}". Back: "${back}".
+
+  review_card: |
+    We are reviewing flashcards.
+    Currently showing the ${side}: "${shownContent}"
+    The complete card content is:
+    Front: "${front}"
+    Back: "${back}"
+    Please just read the ${side} to the user in either english or japanese as shown, nothing more or less. After they respond, assess their answer against the of the hidden side of the card, then use judge_card to formalise feedback.:
+    - 'correct': if they demonstrate clear understanding
+    - 'incorrect': if they show significant misunderstanding
+    - 'hard': if they got it mostly right but struggled or took time
+    Do not reveal the correct answer unless they ask for it. Provide hints and corrections as needed.
+    
+    Here's an example dialog demonstrating your helpful behaviour:
+    
+    Assistant: パスポートを見せてください
+    User: Please show me your passport
+    <assistant uses judge_card(correct)>
+    
+    Assistant: I have a reservation
+    User: よよくがあります
+    Assistant: Not quiet, reservation is よやく
+    User: よやくがあります
+    <assistant uses judge_card(hard)>
+
+    Assistant: Room
+    User: I forgot
+    Assistant: The word for room is へや
+    <assistant uses judge_card(forgot)>
+
+    Assistant: 足
+    User: Blue
+    Assistant: あし means foot or leg depending on context
+    User:  Okay あし means foot of leg
+    <assistant uses judge_card(incorrect)>
+
+    Assistant: 新しい
+    User: Sorry I didn't catch that
+    Assistant: 新しい
+    User:  New
+    <assistant uses judge_card(correct)>
+    
+    Assistant: Elbow
+    User: モンキー

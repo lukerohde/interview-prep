@@ -99,5 +99,6 @@ tqdm==4.67.1
 traitlets==5.14.3
 typing_extensions==4.12.2
 urllib3==2.2.3
+PyYAML==6.0.1
 wcwidth==0.2.13
 whitenoise==6.8.2

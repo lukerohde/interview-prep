@@ -4,70 +4,15 @@ export default class extends Controller {
   static targets = ["previewContainer", "reviewContainer"]
 
   connect() {
-    this.registerTools()
+    this.prompts = {}
   }
 
-  registerTools() {
-    // Flashcard creation tool
-    const flashcardTool = {
-      type: 'function',
-      name: 'create_flashcard',
-      description: 'Create a new flashcard with the specified front and back content.',
-      parameters: {
-        type: 'object',
-        properties: {
-          front: {
-            type: 'string',
-            description: 'The english content for the front of the flashcard'
-          },
-          back: {
-            type: 'string',
-            description: 'The foreign language content for the back of the flashcard'
-          },
-          tags: {
-            type: 'array',
-            items: {
-              type: 'string'
-            },
-            description: 'Optional tags to categorize the flashcard'
-          }
-        },
-        required: ['front', 'back', 'tags']
-      }
-    }
+  handlePromptsAvailable(event) {
+    this.prompts = event.detail
+  }
 
-    // Review start tool
-    const startReviewTool = {
-      type: 'function',
-      name: 'start_review',
-      description: 'When the user asks you to start, run this tool.',
-      parameters: {
-        type: 'object',
-        properties: {}
-      }
-    }
-
-    // AI judgment tool
-    const judgeCardTool = {
-      type: 'function',
-      name: 'judge_card',
-      description: 'Judge the current flashcard based on correctness.  If the user says next card please, that is an invitation to judge their understanding and move on.',
-      parameters: {
-        type: 'object',
-        properties: {
-          status: {
-            type: 'string',
-            description: 'The judgment status: correct, incorrect, or hard',
-            enum: ['correct', 'incorrect', 'hard']
-          }
-        },
-        required: ['status']
-      }
-    }
-
-    this.dispatch('register-tool', { detail: flashcardTool })
-    this.dispatch('register-tool', { detail: startReviewTool })
-    this.dispatch('register-tool', { detail: judgeCardTool })
+  interpolatePrompt(template, variables) {
+    return template.replace(/\${(\w+)}/g, (match, key) => variables[key] || match)
   }
 
   async handleFunctionCall(event) {
@@ -112,8 +57,8 @@ export default class extends Controller {
     const front = card.dataset.flashcardFrontValue
     const back = card.dataset.flashcardBackValue
     
-    // Instruction to read both sides
-    const instruction = `Please read both sides of this flashcard. Front: "${front}". Back: "${back}".`
+    // Use prompt template
+    const instruction = this.interpolatePrompt(this.prompts.play_full_card, { front, back })
     this.dispatch('add-context', { detail: instruction })
     this.dispatch('please-respond')
   }
@@ -156,60 +101,23 @@ export default class extends Controller {
     const back = card.dataset.flashcardBackValue
     const shownContent = side === 'front' ? front : back
     
-    // Instruction to read the card and assess response
-    const instruction = `We are reviewing flashcards.
-    Currently showing the ${side}: "${shownContent}"
-    The complete card content is:
-    Front: "${front}"
-    Back: "${back}"
-    Please just read the ${side} to the user in either english or japanese as shown, nothing more or less. After they respond, assess their answer against the of the hidden side of the card, then use judge_card to formalise feedback.:
-    - 'correct': if they demonstrate clear understanding
-    - 'incorrect': if they show significant misunderstanding
-    - 'hard': if they got it mostly right but struggled or took time
-    Do not reveal the correct answer unless they ask for it. Provide hints and corrections as needed.
-    
-    Here's an example dialog demonstrating your helpful behaviour:
-    
-    Assistant: パスポートを見せてください
-    User: Please show me your passport
-    <assistant uses judge_card(correct)>
-    
-    Assistant: I have a reservation
-    User: よよくがあります
-    Assistant: Not quiet, reservation is よやく
-    User: よやくがあります
-    <assistant uses judge_card(hard)>
-
-    Assistant: Room
-    User: I forgot
-    Assistant: The word for room is へや
-    <assistant uses judge_card(forgot)>
-
-    Assistant: 足
-    User: Blue
-    Assistant: あし means foot or leg depending on context
-    User:  Okay あし means foot of leg
-    <assistant uses judge_card(incorrect)>
-
-    Assistant: 新しい
-    User: Sorry I didn't catch that
-    Assistant: 新しい
-    User:  New
-    <assistant uses judge_card(correct)>
-    
-    Assistant: Elbow
-    User: モンキー
-    <assistant uses judge_card(correct)>
-    `
-    
+    // Use prompt template with interpolation
+    const instruction = this.interpolatePrompt(this.prompts.review_card, {
+      side,
+      shownContent,
+      front,
+      back
+    })
+    console.log(instruction)
     this.dispatch('add-context', { detail: instruction })
     this.dispatch('please-respond')
   }
 
   // Handle self-assessment from user clicking buttons
   async handleSelfAssessment(event) {
-    const status = event.target.dataset.status
     const card = event.target.closest('.flashcard')
+    const status = event.target.dataset.status
+    
     if (!card || !status) return
     
     await this.postJudgement(card, status)
