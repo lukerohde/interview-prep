@@ -2,7 +2,6 @@ import { Application } from '@hotwired/stimulus'
 import ThingController from '../../main/js/controllers/thing_controller'
 
 console.log('Loading Stimulus application...')
-
 let application = null
 
 if (module.hot) {

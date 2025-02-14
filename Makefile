@@ -1,53 +1,51 @@
-.PHONY: run-server build test npm-dev npm-build docker-up docker-down docker-restart
+.PHONY: run migrate build test npm-dev npm-build up down restart
 
 # Default target
-all: build run-server
+all: build run
 
 # Start the development server with all dependencies
-run-server: npm-build
+run: npm-build
 	docker-compose exec app python manage.py runserver 0.0.0.0:3000
 
 # Run database migrations
-migrate: docker-up
+migrate: up
 	docker-compose exec app python manage.py makemigrations
 	docker-compose exec app python manage.py migrate
 
-make dev: 
-	make npm-dev & make run-server
-
 # Docker restart
-docker-restart: docker-down docker-up
+restart: down up
+
+# Build npm assets
+npm-build: up
+	docker-compose exec app npm run build
 
 # Start npm development mode in background (depends on docker being up)
-npm-build: docker-up
-	docker-compose exec app npm run build
+dev: up
+	docker-compose exec app npm run dev
+
 
 # Build the Docker containers
 build:
 	docker-compose build
 
 # Run the test suite
-test: docker-up
+test: up
 	docker-compose exec app pytest
 
 # Run playwright tests in headed mode
-test-headed: docker-up
+test-headed: up
 	docker-compose exec app pytest --headed
 
-# Build npm assets
-npm-dev: docker-up
-	docker-compose exec app npm run dev
-
 # Start Docker containers
-docker-up:
+up:
 	docker-compose up -d
 
 # Stop Docker containers
-docker-down:
+down:
 	docker-compose down
 
 # Clean up Docker resources
-clean: docker-down
+clean: down
 	docker system prune -f
 
 kill:
@@ -56,8 +54,8 @@ kill:
 # Show help
 help:
 	@echo "Available targets:"
-	@echo "  all         - Run everything (docker build and run-server)"
-	@echo "  run-server  - Start just development server with all dependencies"
+	@echo "  all         - Run everything (docker build and run)"
+	@echo "  run      - Start just development server with all dependencies"
 	@echo "  dev         - Start npm in devlopment mode plus the development server"
 	@echo "  migrate     - Run database migrations"
 	@echo "  build       - Build Docker containers"
@@ -65,9 +63,9 @@ help:
 	@echo "  test-headed - Run playwright tests in headed mode"
 	@echo "  npm-dev     - Start npm in development mode"
 	@echo "  npm-build   - Build npm assets"
-	@echo "  docker-up   - Start Docker containers"
-	@echo "  docker-down - Stop Docker containers"
-	@echo "  docker-restart - Restart Docker containers"
+	@echo "  up          - Start Docker containers"
+	@echo "  down        - Stop Docker containers"
+	@echo "  restart     - Restart Docker containers"
 	@echo "  clean       - Clean up all Docker resources"
 	@echo "  kill        - Kill all Docker containers"
 	@echo "  help        - Show this help message"

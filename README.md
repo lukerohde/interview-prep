@@ -1,4 +1,11 @@
-# Django Template
+# Interview Prep
+
+A voice-chat web application to assist with interview preparation.
+
+Features:
+- Upload you resume and the position description
+- Voice chat with an AI interviewer to draft STAR format answers for likely questions
+- Get hired and profit!
 
 ## Setup
 
@@ -7,8 +14,15 @@ Run the setup script to configure your project name and `.env` plus `docker-comp
 ```
 ./setup
 ```
+```
 
 Start developing
+
+```
+make run
+```
+
+For hot asset reloading, in another terminal run
 
 ```
 make dev

@@ -90,6 +90,6 @@ docker-compose run --rm app /bin/bash -c "python manage.py createsuperuser --noi
 
 echo ""
 echo ""
-echo "to run your server, run 'make run-server'"
-echo "to dev 'make dev'"
+echo "to run your server, run 'make run'"
+echo "to have hot asset reloading, in another terminal run 'make run'"
 echo "for help 'make help'"

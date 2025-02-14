@@ -5,6 +5,7 @@ export default class extends Controller {
   static targets = ["form", "input", "fileInput", "previewContainer", "submit", "loading"]
 
   connect() {
+    
   }
 
   disconnect() {
