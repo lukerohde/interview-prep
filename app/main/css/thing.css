@@ -1,0 +1,24 @@
+/* thing Plan specific styles */
+.thing-card {
+  transition: transform 0.2s;
+}
+
+.thing-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+}
+
+.thing-list {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* thing plan actions */
+.thing-actions {
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.thing-actions:hover {
+  opacity: 1;
+}

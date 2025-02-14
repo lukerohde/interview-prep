@@ -1,0 +1,15 @@
+<div class="thing-detail d-flex justify-content-between align-items-center bg-white border rounded p-3">
+  <h2 class="mb-0"><a href="{% url 'main:thing_detail' thing.pk %}">{{ thing.name }}</a></h1>
+  <div class="d-flex">
+    <a href="{% url 'main:thing_edit' thing.pk %}" class="btn btn-warning me-2" title="Edit Thing">
+      <i class="bi bi-pencil-square"></i>
+    </a>
+    <form action="{% url 'main:thing_delete' thing.pk %}" method="post" class="d-inline">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger" title="Delete Thing" 
+              onclick="return confirm('Are you sure you want to delete this thing?');">
+        <i class="bi bi-trash"></i>
+      </button>
+    </form>
+  </div>
+</div>

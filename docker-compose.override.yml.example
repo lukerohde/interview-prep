@@ -1,0 +1,35 @@
+services:
+  app:
+    build:
+      target: devtest
+    volumes:
+      - ./app:/home/pyuser/app:delegated
+      - ./.media_volume:/home/pyuser/app/media
+      - app_user:/home/pyuser # for bash history etc
+      # - ./.packages:/home/pyuser/.local 
+    command:
+      - ./start.override
+    ports:
+      - $APP_PORT:3000
+      - "1234:1234"  # Add this line for HMR
+      - "9323:9323"  # Playwright UI port
+    networks:
+      - development
+    environment:
+      - DISPLAY=host.docker.internal:0
+      - PLAYWRIGHT_HEADLESS=true
+  pg:
+    ports:
+      - $POSTGRES_PORT:5432
+    volumes:
+      - ./.pg_data:/pg_data
+      - db_root:/root # for bash history etc
+#      - ./backup.sql.gz:/docker-entrypoint-initdb.d/seed.sql.gz
+    networks:
+      - development
+networks:
+  development:
+volumes:
+  app_user:
+  db_root:
+  

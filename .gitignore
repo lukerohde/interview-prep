@@ -1,0 +1,47 @@
+docker-compose.override.yml
+docker-compose.override.yml.prod
+.env
+.env-prod
+__pycache__
+.packages
+.notebook
+.pg_data
+.media_volume
+
+# deployment stuff
+.digital_ocean_env
+.render_db_env
+backup/
+.certbot
+.nginx
+.tmp
+app/.npmrc
+app/collectstatic
+.DS_Store
+node_modules
+app/ai_helpers.log
+debug.log
+
+# Parcel
+.parcel-cache
+.pytest-cache
+app/static/**/dist/
+.cache
+
+# Node
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Test coverage
+app/coverage/
+.nyc_output/
+
+# Playwright
+app/test-results/
+app/playwright
+app/playwright-report
+
+# Pulumi
+.pulumi

@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>{% if form.instance.pk %}Edit Thing{% else %}Create Thing{% endif %}</h1>
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">
+      <i class="bi bi-save"></i> {% if form.instance.pk %}Update{% else %}Create{% endif %}
+    </button>
+  </form>
+  <a href="{% url 'main:thing_list' %}" class="btn btn-secondary mt-3">
+    <i class="bi bi-x-circle"></i> Cancel
+  </a>
+{% endblock %} 

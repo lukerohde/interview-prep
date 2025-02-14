@@ -1,0 +1,44 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./app.dockerfile
+      target: production
+    restart: unless-stopped
+    environment:
+      - APP_PORT
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      - REDIS_HOST
+      - REDIS_PASSWORD
+      - REDIS_PORT_NUMBER
+      - DJANGO_SECRET_KEY
+      - DJANGO_SUPERUSER_USERNAME
+      - DJANGO_SUPERUSER_PASSWORD
+      - DJANGO_SUPERUSER_EMAIL
+      - DJANGO_ALLOWED_HOSTS
+      - DJANGO_DEBUG
+      - OPENAI_API_KEY
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+      - AWS_REGION
+      - AWS_MEDIA_BUCKET_NAME
+    links:
+      - pg
+    tty: true
+    stdin_open: true
+    command: "gunicorn config.wsgi:application --bind 0.0.0.0:3000 --workers 3 --chdir ."
+    volumes:
+      - media_volume:/home/pyuser/app/media
+  pg:
+    image: postgres:15.2
+    restart: unless-stopped
+    environment:
+      - PGDATA=/pg_data
+      - POSTGRES_DB
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+    volumes:
+      - pg_data:/pg_data
+volumes:
+  pg_data:
+  media_volume:

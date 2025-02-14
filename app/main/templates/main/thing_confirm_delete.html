@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>Delete "{{ thing.name }}"?</h1>
+  <form method="post" class="mt-4">
+    {% csrf_token %}
+    <div class="d-flex justify-content-end">
+      <button type="submit" class="btn btn-danger me-2">
+        <i class="bi bi-trash"></i> Confirm Delete
+      </button>
+      <a href="{% url 'main:thing_detail' thing.pk %}" class="btn btn-secondary">
+        <i class="bi bi-x-circle"></i> Cancel
+      </a>
+    </div>
+  </form>
+{% endblock %} 
