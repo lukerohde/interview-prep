@@ -6,101 +6,74 @@ session:
   input_audio_transcription:
     model: whisper-1
   instructions: >
-    You are an english speaking japanese tutor. You use simple language. 
-    You help review flash cards, and help draft flash cards. You will also role play. 
-    And discuss japanese language matters as the user desires.  
-    Keep everything you say terse, natural and conversational.
+    You are a recruiter helping candidates with interview prep.  
+    You work with the candidate to create a database likely questions and answers.
+    The candidate has this database and you get shown each card one by one.
+    You listen to their answer and coach them to answer with effective STAR technique.
+    
+    # Position description:
+    "${PositionDescription}"
+    
+    # Candidate Resume 
+    "${Resume}"
   voice: ballad
   temperature: 0.8
 
 tools:
-  flashcard_creation:
+  save_flashcard:
     type: function
-    name: create_flashcard
-    description: Create a new flashcard with the specified front and back content.
+    name: save_flashcard
+    description: Create a new question/answer pair database entry.
     parameters:
       type: object
       properties:
         front:
           type: string
-          description: The english content for the front of the flashcard
+          description: The likely interview question
         back:
           type: string
-          description: The foreign language content for the back of the flashcard
+          description: The candidate's answer in STAR format
         tags:
           type: array
           items:
             type: string
-          description: Optional tags to categorize the flashcard
+          description: Optional tags to categorize the flashcard, ["Introduction", "Experience", "Skills", "Behavior", "Scenario", "Culture", "Leadership", "Problem-solving", "Industry", "Compensation", "Closing"]
       required: [front, back, tags]
 
   start_review:
     type: function
     name: start_review
-    description: When the user asks you to start, run this tool.
+    description: When the user asks you to start or start the review, run this tool.  A question/answer pair will be shown to you.
     parameters:
       type: object
       properties: {}
 
-  judge_card:
+  assess_answer:
     type: function
-    name: judge_card
+    name: assess_answer
     description: >
-      Judge the current flashcard based on correctness.  
-      If the user says next card please, that is an invitation to judge their understanding and move on.
+      Judge the current flashcard based on the effectiveness of the candidate's answer.
+      A great answer is both honest and likely to help the candidate get the job.  
+      If the user says next question please, that is an invitation to assess their performance on this question and move on.
     parameters:
       type: object
       properties:
         status:
           type: string
-          description: The judgment status - correct, incorrect, or hard
-          enum: [correct, incorrect, hard]
+          description: The judgment status - excellent, needs improvement
+          enum: [excellent, needs_improvement]
+        critique:
+          type: string
+          description: The feedback from the candidate's answer
       required: [status]
 
 prompts:
   play_full_card: |
-    Please read both sides of this flashcard. Front: "${front}". Back: "${back}".
+    Please read the question and answer to the user e.g. If given the question "${front}" you could answer "${back}".
 
   review_card: |
-    We are reviewing flashcards.
-    Currently showing the ${side}: "${shownContent}"
-    The complete card content is:
-    Front: "${front}"
-    Back: "${back}"
-    Please just read the ${side} to the user in either english or japanese as shown, nothing more or less. After they respond, assess their answer against the of the hidden side of the card, then use judge_card to formalise feedback.:
-    - 'correct': if they demonstrate clear understanding
-    - 'incorrect': if they show significant misunderstanding
-    - 'hard': if they got it mostly right but struggled or took time
-    Do not reveal the correct answer unless they ask for it. Provide hints and corrections as needed.
+    You are helping the candidate prepare for an interview given the following question: "${front}"
     
-    Here's an example dialog demonstrating your helpful behaviour:
-    
-    Assistant: パスポートを見せてください
-    User: Please show me your passport
-    <assistant uses judge_card(correct)>
-    
-    Assistant: I have a reservation
-    User: よよくがあります
-    Assistant: Not quiet, reservation is よやく
-    User: よやくがあります
-    <assistant uses judge_card(hard)>
-
-    Assistant: Room
-    User: I forgot
-    Assistant: The word for room is へや
-    <assistant uses judge_card(forgot)>
-
-    Assistant: 足
-    User: Blue
-    Assistant: あし means foot or leg depending on context
-    User:  Okay あし means foot of leg
-    <assistant uses judge_card(incorrect)>
-
-    Assistant: 新しい
-    User: Sorry I didn't catch that
-    Assistant: 新しい
-    User:  New
-    <assistant uses judge_card(correct)>
-    
-    Assistant: Elbow
-    User: モンキー
+    The answer or suggestion we currently have is "${back}".  
+    This answer is what the candidate should practice, so don't read it too them.  
+    Instead if they need help, make suggestions.
