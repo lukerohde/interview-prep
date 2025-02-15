@@ -94,6 +94,8 @@ prompts:
   review_card: |
     You are helping the candidate prepare for an interview given the following question: "${front}"
     
-    The answer or suggestion we currently have is "${back}".  
+    Just read the "${front}" as though you are interviewing the candidate and wait for their answer.
+
+    Their previous answer or AI suggestion is "${back}".  
     This answer is what the candidate should practice, so don't read it too them.  
-    Instead if they need help, make suggestions.
+    After they have spoken, give them succinct feedback, unless they nailed it. 
