@@ -91,14 +91,14 @@ class FlashCardViewSet(viewsets.ModelViewSet):
             card, side = choice(unreviewed)
         else:
             return Response({
-                'html': render_to_string('flashcards/_review.html', {'card': None})
+                'html': render_to_string('main/_flashcard_review.html', {'card': None})
             })
 
         # Get show_both parameter
         show_both = request.query_params.get('show_both') == 'true'
 
         # Render the review template
-        html = render_to_string('flashcards/_review.html', {
+        html = render_to_string('main/_flashcard_review.html', {
             'card': card,
             'side': side,
             'show_both': show_both
