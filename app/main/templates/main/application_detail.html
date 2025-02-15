@@ -30,28 +30,32 @@
       </div>
 
       <!-- Transcript Area -->
-      <div id="transcript-container" data-controller="transcript" class="transcript-container bg-white rounded border flex-grow-1 mb-3 position-relative" data-transcript-target="container">
+      <div id="transcript-container" data-controller="transcript" class="transcript-container bg-white rounded border flex-grow-1 mb-3 overflow-auto" data-transcript-target="container">
         <!-- Voice Button -->
-        <div class="sticky-top d-flex justify-content-end p-3 position-relative">
-            <div class="voice-status d-none" data-voice-chat-target="status">
+        <div class="sticky-top" style="z-index: 1020;">
+          <div class="d-flex justify-content-end p-3 gap-2 align-items-center">
+            <div class="voice-status small text-muted d-none" data-voice-chat-target="status">
                 Hold to talk or tap to toggle
             </div>
             <button
-            class="voice-button"
-            data-voice-chat-target="walkieButton"
-            data-action="
-              pointerdown->voice-chat#pressStart
-              pointerup->voice-chat#pressEnd
-              keydown@window->voice-chat#spaceDown
-              keyup@window->voice-chat#spaceUp
-            "
-            data-state="disconnected"
-            data-muted="true"
-            title="Hold to talk or tap to toggle mute">
-            <i class="bi bi-telephone-x"></i>
-          </button>
+              class="voice-button"
+              data-voice-chat-target="walkieButton"
+              data-action="
+                pointerdown->voice-chat#pressStart
+                pointerup->voice-chat#pressEnd
+                keydown@window->voice-chat#spaceDown
+                keyup@window->voice-chat#spaceUp
+              "
+              data-state="disconnected"
+              data-muted="true"
+              title="Hold to talk or tap to toggle mute">
+              <i class="bi bi-telephone-x"></i>
+            </button>
+          </div>
         </div>
-        <!-- Transcript content will appear here -->
+        <div class="flex-grow-1 overflow-auto p-3">
+          <!-- Transcript content will appear here -->
+        </div>
       </div>
       {% include 'main/_transcript_message.html' %}
     </div>
