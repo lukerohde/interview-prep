@@ -20,9 +20,9 @@ session:
   temperature: 0.8
 
 tools:
-  save_flashcard:
+  create_flashcard:
     type: function
-    name: save_flashcard
+    name: create_flashcard
     description: Create a new question/answer pair database entry.
     parameters:
       type: object
@@ -38,6 +38,26 @@ tools:
           items:
             type: string
           description: Optional tags to categorize the flashcard, ["Introduction", "Experience", "Skills", "Behavior", "Scenario", "Culture", "Leadership", "Problem-solving", "Industry", "Compensation", "Closing"]
+      required: [front, back, tags]
+
+  update_flashcard:
+    type: function
+    name: update_flashcard
+    description: When a user asks you to save this response, call this command.  It will update an existing question/answer pair database entry.
+    parameters:
+      type: object
+      properties:
+        front:
+          type: string
+          description: The interview question.  Do not update this unless the candidate asks you to.  Leave blank to keep the current question.
+        back:
+          type: string
+          description: The candidate's updated answer in STAR format
+        tags:
+          type: array
+          items:
+            type: string
+          description: Optional tags to categorize the flashcard, ["Introduction", "Experience", "Skills", "Behavior", "Scenario", "Culture", "Leadership", "Problem-solving", "Industry", "Compensation", "Closing"].  Leave blank to keep the current question.
       required: [front, back, tags]
 
   start_review:

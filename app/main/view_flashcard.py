@@ -25,7 +25,7 @@ class FlashCardViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
-        html = render_to_string('flashcards/_preview.html', {
+        html = render_to_string('main/_flashcard_preview.html', {
             'flashcards': queryset
         })
         return Response({
@@ -48,7 +48,7 @@ class FlashCardViewSet(viewsets.ModelViewSet):
         flashcards = FlashCard.objects.filter(id__in=flashcard_ids)
         html_parts = []
         for flashcard in flashcards:
-            html_part = render_to_string('flashcards/_preview.html', {'flashcard': flashcard})
+            html_part = render_to_string('main/_flashcard_preview.html', {'flashcard': flashcard})
             html_parts.append(html_part)
         html = ''.join(html_parts)
         response_data = {
@@ -109,6 +109,15 @@ class FlashCardViewSet(viewsets.ModelViewSet):
 
         return Response({'html': html})
 
+    def update(self, request, *args, **kwargs):
+        """Update a flashcard and return the updated HTML"""
+        response = super().update(request, *args, **kwargs)
+        if response.status_code == status.HTTP_200_OK:
+            card = self.get_object()
+            html = render_to_string('main/_flashcard_preview.html', {'flashcard': card})
+            response.data['html'] = html
+        return response
+
     @action(detail=True, methods=['post'])
     def review(self, request, pk=None):
         """Update review status for a card"""
@@ -126,7 +135,7 @@ class FlashCardViewSet(viewsets.ModelViewSet):
         card.update_review(ReviewStatus(status), side)
 
         # Get the updated preview of the judged card
-        updated_preview = render_to_string('flashcards/_preview.html', {'flashcard': card})
+        updated_preview = render_to_string('main/_flashcard_preview.html', {'flashcard': card})
 
         # Get the next card
         show_both = request.query_params.get('show_both') == 'true'

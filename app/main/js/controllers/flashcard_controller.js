@@ -25,31 +25,77 @@ export default class extends Controller {
   async handleFunctionCall(event) {
     const { name, arguments: args } = event.detail
 
-    if (name === 'save_flashcard') {
-      try {
-        const response = await this.postWithToken(this.apiUrlValue, {
-          front: args.front,
-          back: args.back,
-          tags: args.tags || []
-        })
-
-        const flashcard = await response.json()
-        this.appendFlashcard(flashcard)
-      } catch (error) {
-        console.error('Error creating flashcard:', error)
-      }
-    } else if (name === 'start_review') {
-      this.fetchNextCard()
-    } else if (name === 'judge_card') {
-      const card = this.reviewContainerTarget.querySelector('.flashcard')
-      if (card) {
-        await this.handleAIJudgement(args.status, card)
-      } else {
-        console.error('No card found to judge')
-      }
+    switch (name) {
+      case 'create_flashcard':
+        await this.createFlashcard(args)
+        break
+      case 'start_review':
+        this.fetchNextCard()
+        break
+      case 'judge_card':
+        await this.judgeCard(args)
+        break
+      case 'update_flashcard':
+        await this.updateCard(args)
+        break
+      default:
+        console.warn(`Unknown function call: ${name}`)
     }
   }
 
+  async createFlashcard(args) {
+    try {
+      const response = await this.postWithToken(this.apiUrlValue, {
+        front: args.front,
+        back: args.back,
+        tags: args.tags || []
+      })
+      const flashcard = await response.json()
+      this.appendFlashcard(flashcard)
+    } catch (error) {
+      console.error('Error creating flashcard:', error)
+    }
+  }
+
+  async judgeCard(args) {
+    const card = this.reviewContainerTarget.querySelector('.flashcard')
+    if (card) {
+      await this.handleAIJudgement(args.status, card)
+    } else {
+      console.error('No card found to judge')
+    }
+  }
+
+  async updateCard(args) {
+    console.log('Updating card:', args)
+    const card = this.reviewContainerTarget.querySelector('.flashcard')
+    if (!card) {
+      console.error('No card found to update')
+      return
+    }
+
+    try {
+      const response = await this.postWithToken(
+        this.apiUrlValue + card.dataset.flashcardId + '/',
+        {
+          front: args.front,
+          back: args.back,
+          tags: args.tags || []
+        },
+        'PUT'
+      )
+
+      if (!response.ok) throw new Error('Failed to update flashcard')
+
+      const data = await response.json()
+      if (data.html) {
+        this.updateCardContent(card, data.html)
+      }
+    } catch (error) {
+      console.error('Error updating flashcard:', error)
+    }
+  }
+  
   appendFlashcard(flashcard) {
     if (flashcard && this.hasPreviewContainerTarget) {
       // Prepend the new flashcards to the preview container
@@ -90,7 +136,6 @@ export default class extends Controller {
       // If we got a card, automatically start the review
       if (data.html.includes('flashcard')) {
         this.reviewCard()
-      } else {
       }
     } catch (error) {
       console.error('Error loading next review:', error)
@@ -117,7 +162,6 @@ export default class extends Controller {
       front,
       back
     })
-    console.log(instruction)
     this.dispatch('add-context', { detail: instruction })
     this.dispatch('please-respond')
   }
@@ -145,6 +189,27 @@ export default class extends Controller {
     const backendStatus = statusMap[status] || status
     
     await this.postJudgement(card, backendStatus)
+  }
+
+  // Helper to update a card's HTML content with new content from the server
+  updateCardContent(existingCard, updatedPreview, moveToTop = true) {
+    if (!existingCard || !updatedPreview || !this.hasPreviewContainerTarget) return
+
+    // Create a temporary container to hold the new HTML
+    const temp = document.createElement('div')
+    temp.innerHTML = updatedPreview
+    const updatedCard = temp.firstElementChild
+
+    // Replace the existing card with the updated one
+    if (moveToTop) {
+      this.previewContainerTarget.insertBefore(
+        updatedCard,
+        this.previewContainerTarget.firstChild
+      )
+    } else {
+      existingCard.parentNode.insertBefore(updatedCard, existingCard)
+    }
+    existingCard.remove()
   }
 
   // Common method to post judgment to backend
@@ -177,23 +242,11 @@ export default class extends Controller {
       const data = await response.json()
 
       // Update the preview of the judged card and move it to the top
-      if (this.hasPreviewContainerTarget && data.updated_preview) {
+      if (data.updated_preview) {
         const existingCard = this.previewContainerTarget.querySelector(
           `.flashcard-preview[data-flashcard-id="${data.updated_card_id}"]`
         )
-        if (existingCard) {
-          // Create a temporary container to hold the new HTML
-          const temp = document.createElement('div')
-          temp.innerHTML = data.updated_preview
-          const updatedCard = temp.firstElementChild
-
-          // Replace the existing card with the updated one and move it to the top
-          this.previewContainerTarget.insertBefore(
-            updatedCard,
-            this.previewContainerTarget.firstChild
-          )
-          existingCard.remove()
-        }
+        this.updateCardContent(existingCard, data.updated_preview)
       }
 
       // Fetch the next card for review
