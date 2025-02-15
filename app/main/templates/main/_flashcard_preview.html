@@ -6,6 +6,8 @@ This partial is used to render a preview of a flashcard in the sidebar
      data-flashcard-id="{{ flashcard.id }}"
      data-flashcard-front-value="{{ flashcard.front }}"
      data-flashcard-back-value="{{ flashcard.back }}"
+     data-flashcard-front-notes-value="{{ flashcard.front_notes }}"
+     data-flashcard-back-notes-value="{{ flashcard.back_notes }}"
      data-flashcard-tags-value="{{ flashcard.tags|join:',' }}">
   <div class="card-body p-2 position-relative">
     <button class="btn btn-sm btn-outline-primary position-absolute top-0 end-0 mt-1 me-1" 

@@ -46,6 +46,61 @@ class TestFlashcardUI(UITestBase, StaticLiveServerTestCase):
         no_review_message = self.page.locator("text='No cards due for review!'")
         assert no_review_message.is_visible(), "Expected 'No cards due for review!' message when only back side is due"
 
+    def test_edit_flashcard_notes(self):
+        # Create a user and application
+        user = UserFactory()
+        application = ApplicationFactory(owner=user)
+        
+        # Create a flashcard with some initial notes
+        flashcard = FlashcardFactory(
+            user=user,
+            front='What is dependency injection?',
+            back='A design pattern where dependencies are passed in rather than created internally',
+            front_notes='Remember to mention IoC containers',
+            back_notes='Good to mention Spring Framework as an example'
+        )
+        flashcard.applications.add(application)
+        
+        # Setup the user session and navigate to the application detail page
+        self.setup_user_session(self.page, user)
+        self.page.goto(f"{self.live_server.url}{reverse('main:application_detail', kwargs={'pk': application.pk})}")
+        self.wait_for_page_load(self.page)
+        
+        # Click the edit button on the flashcard
+        edit_button = self.page.locator(f"[data-flashcard-id='{flashcard.id}'] button[data-action='flashcard#editCard']")
+        edit_button.click()
+        
+        # Wait for the modal to appear
+        modal = self.page.locator('#editFlashcardModal')
+        modal.wait_for(state='visible')
+        
+        # Verify the notes are loaded correctly
+        front_notes = self.page.locator('#editFlashcardFrontNotes')
+        back_notes = self.page.locator('#editFlashcardBackNotes')
+        assert front_notes.input_value() == 'Remember to mention IoC containers'
+        assert back_notes.input_value() == 'Good to mention Spring Framework as an example'
+        
+        # Update the notes
+        front_notes.fill('Remember IoC containers and mention constructor injection')
+        back_notes.fill('Use Spring and ASP.NET Core as examples')
+        
+        # Save the changes
+        save_button = self.page.locator("button[data-action='flashcard#saveEdit']")
+        save_button.click()
+        
+        # Wait for the save to complete
+        self.page.wait_for_timeout(500)  # Wait for any animations
+        
+        # Verify the card in the UI has the updated notes (in data attributes)
+        updated_card = self.page.locator(f"[data-flashcard-id='{flashcard.id}']")
+        assert updated_card.get_attribute('data-flashcard-front-notes-value') == 'Remember IoC containers and mention constructor injection'
+        assert updated_card.get_attribute('data-flashcard-back-notes-value') == 'Use Spring and ASP.NET Core as examples'
+        
+        # Verify the database was updated
+        flashcard.refresh_from_db()
+        assert flashcard.front_notes == 'Remember IoC containers and mention constructor injection'
+        assert flashcard.back_notes == 'Use Spring and ASP.NET Core as examples'
+
     def test_edit_flashcard_categories(self):
         # Create a user and application
         user = UserFactory()

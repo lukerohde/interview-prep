@@ -74,6 +74,8 @@ class FlashCard(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     front = models.TextField()
     back = models.TextField()
+    front_notes = models.TextField(blank=True, null=True, help_text='Notes for the front side of the card')
+    back_notes = models.TextField(blank=True, null=True, help_text='Notes for the back side of the card')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     tags = models.JSONField(default=list)
@@ -113,8 +115,14 @@ class FlashCard(models.Model):
             # Check both sides
             return self.is_due_for_review('front') or self.is_due_for_review('back')
 
-    def update_review(self, status: ReviewStatus, side='front'):
-        """Update review status and schedule next review using SM-2 algorithm"""
+    def update_review(self, status: ReviewStatus, side='front', notes=None):
+        """Update review status and schedule next review using SM-2 algorithm
+        
+        Args:
+            status (ReviewStatus): The review status (FORGOT, HARD, or EASY)
+            side (str, optional): Which side of the card to update ('front' or 'back'). Defaults to 'front'.
+            notes (str, optional): Notes to store for this side of the card. Defaults to None.
+        """
         now = timezone.now()
         
         # Get current values
@@ -126,6 +134,10 @@ class FlashCard(models.Model):
         # Update review count
         setattr(self, f'{side}_review_count', review_count + 1)
         setattr(self, f'{side}_last_review', now)
+
+        # Update notes if provided
+        if notes is not None:
+            setattr(self, f'{side}_notes', notes)
 
         # Apply SM-2 algorithm
         if status == ReviewStatus.FORGOT:

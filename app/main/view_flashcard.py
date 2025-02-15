@@ -141,6 +141,7 @@ class FlashCardViewSet(viewsets.GenericViewSet,
         card = self.get_object()
         status = request.data.get('status')
         side = request.data.get('side', 'front')
+        notes = request.data.get('notes')
 
         if status not in [s.value for s in ReviewStatus]:
             return Response(
@@ -149,7 +150,7 @@ class FlashCardViewSet(viewsets.GenericViewSet,
             )
 
         # Update the review status
-        card.update_review(ReviewStatus(status), side)
+        card.update_review(ReviewStatus(status), side, notes)
 
         # Get the updated preview of the judged card
         updated_preview = render_to_string('main/_flashcard_preview.html', {'flashcard': card})

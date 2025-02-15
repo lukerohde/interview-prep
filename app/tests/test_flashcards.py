@@ -148,3 +148,56 @@ def test_flashcard_update_readonly_fields(authenticated_client, user):
     assert flashcard.front == 'Valid update'
     assert flashcard.front_review_count == 5  # unchanged
     assert flashcard.front_easiness_factor == 2.1  # unchanged
+
+def test_flashcard_review_with_notes(authenticated_client, user):
+    # Create a flashcard
+    flashcard = FlashcardFactory(user=user)
+    
+    # Test front side review with notes
+    url = f'/api/flashcards/{flashcard.id}/review/'
+    front_review_data = {
+        'status': 'hard',
+        'side': 'front',
+        'notes': 'Need to study this concept more'
+    }
+    response = authenticated_client.post(
+        url,
+        data=json.dumps(front_review_data),
+        content_type='application/json'
+    )
+    
+    # Check response
+    assert response.status_code == 200
+    response_data = response.json()
+    assert 'updated_preview' in response_data
+    assert 'updated_card_id' in response_data
+    assert str(flashcard.id) == response_data['updated_card_id']
+    
+    # Verify front notes updated
+    flashcard.refresh_from_db()
+    assert flashcard.front_notes == 'Need to study this concept more'
+    assert flashcard.back_notes is None  # Back notes should be unchanged
+    
+    # Test back side review with notes
+    back_review_data = {
+        'status': 'easy',
+        'side': 'back',
+        'notes': 'Good explanation, remember the example'
+    }
+    response = authenticated_client.post(
+        url,
+        data=json.dumps(back_review_data),
+        content_type='application/json'
+    )
+    
+    # Check response
+    assert response.status_code == 200
+    response_data = response.json()
+    assert 'updated_preview' in response_data
+    assert 'updated_card_id' in response_data
+    assert str(flashcard.id) == response_data['updated_card_id']
+    
+    # Verify back notes updated while front notes remain unchanged
+    flashcard.refresh_from_db()
+    assert flashcard.front_notes == 'Need to study this concept more'  # Front notes should be unchanged
+    assert flashcard.back_notes == 'Good explanation, remember the example'

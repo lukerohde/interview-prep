@@ -3,8 +3,10 @@
      data-flashcard-id="{{ card.id }}"
      data-flashcard-side="{{ side }}"
      data-flashcard-front-value="{{ card.front }}"
-     data-flashcard-back-value="{{ card.back }}">
-    
+     data-flashcard-back-value="{{ card.back }}"
+     data-flashcard-front-notes-value="{{ card.front_notes }}"
+     data-flashcard-back-notes-value="{{ card.back_notes }}">
+
     <div class="review-stats text-muted small text-end mb-2">
         Reviews: {% if side == 'front' %}{{ card.front_review_count }}{% else %}{{ card.back_review_count }}{% endif %}
     </div>

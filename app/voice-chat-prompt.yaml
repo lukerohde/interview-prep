@@ -75,6 +75,7 @@ tools:
       Judge the current flashcard based on the effectiveness of the candidate's answer.
       A great answer is both honest and likely to help the candidate get the job.  
       If the user says next question please, that is an invitation to assess their performance on this question and move on.
+      If the user nails it, assess the card as excellent to move on.
     parameters:
       type: object
       properties:
@@ -84,7 +85,7 @@ tools:
           enum: [excellent, needs_improvement]
         critique:
           type: string
-          description: The feedback from the candidate's answer
+          description: The feedback on the candidate's answer.  Stuff to work on next time.  A note for yourself.  Keep it short.
       required: [status]
 
 prompts:
@@ -96,6 +97,7 @@ prompts:
     
     Just read the "${front}" as though you are interviewing the candidate and wait for their answer.
 
+    Your previous notes are "${notes}".
     Their previous answer or AI suggestion is "${back}".  
     This answer is what the candidate should practice, so don't read it too them.  
-    After they have spoken, give them succinct feedback, unless they nailed it. 
+    After they have spoken, give them succinct feedback, unless they nailed it. Two sentances tops, one suggestion only.

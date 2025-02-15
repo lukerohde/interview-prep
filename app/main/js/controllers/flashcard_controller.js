@@ -36,7 +36,7 @@ export default class extends Controller {
       case 'start_review':
         this.fetchNextCard()
         break
-      case 'judge_card':
+      case 'assess_answer':
         await this.judgeCard(args)
         break
       case 'update_flashcard':
@@ -64,7 +64,7 @@ export default class extends Controller {
   async judgeCard(args) {
     const card = this.reviewContainerTarget.querySelector('.flashcard')
     if (card) {
-      await this.handleAIJudgement(args.status, card)
+      await this.handleAIJudgement(args, card)
     } else {
       console.error('No card found to judge')
     }
@@ -174,10 +174,14 @@ export default class extends Controller {
     this.currentEditCard = card
     const frontTextarea = document.getElementById('editFlashcardFront')
     const backTextarea = document.getElementById('editFlashcardBack')
+    const frontNotesTextarea = document.getElementById('editFlashcardFrontNotes')
+    const backNotesTextarea = document.getElementById('editFlashcardBackNotes')
     const tagsInput = document.getElementById('editFlashcardTags')
 
     frontTextarea.value = card.dataset.flashcardFrontValue
     backTextarea.value = card.dataset.flashcardBackValue
+    frontNotesTextarea.value = card.dataset.flashcardFrontNotesValue || ''
+    backNotesTextarea.value = card.dataset.flashcardBackNotesValue || ''
     tagsInput.value = card.dataset.flashcardTagsValue || ''
 
     this.editModal.show()
@@ -186,6 +190,8 @@ export default class extends Controller {
   saveEdit() {
     const frontTextarea = document.getElementById('editFlashcardFront')
     const backTextarea = document.getElementById('editFlashcardBack')
+    const frontNotesTextarea = document.getElementById('editFlashcardFrontNotes')
+    const backNotesTextarea = document.getElementById('editFlashcardBackNotes')
     const tagsInput = document.getElementById('editFlashcardTags')
 
     // Split tags by comma and trim whitespace
@@ -197,6 +203,8 @@ export default class extends Controller {
     this.userUpdateCard({
       front: frontTextarea.value,
       back: backTextarea.value,
+      front_notes: frontNotesTextarea.value,
+      back_notes: backNotesTextarea.value,
       tags: tags
     })
   }
@@ -259,13 +267,15 @@ export default class extends Controller {
     const front = card.dataset.flashcardFrontValue
     const back = card.dataset.flashcardBackValue
     const shownContent = side === 'front' ? front : back
+    const notes = side === 'front' ? card.dataset.flashcardFrontNotesValue : card.dataset.flashcardBackNotesValue
     
     // Use prompt template with interpolation
     const instruction = this.interpolatePrompt(this.prompts.review_card, {
       side,
       shownContent,
       front,
-      back
+      back,
+      notes
     })
     this.dispatch('add-context', { detail: instruction })
     this.dispatch('please-respond')
@@ -282,18 +292,24 @@ export default class extends Controller {
   }
 
   // Handle AI judgment of user's response
-  async handleAIJudgement(status, card) {
+  async handleAIJudgement(args, card) {
+    status = args.status
+    notes = args.critique
     if (!card || !status) return
 
     // Convert AI judgment to backend status values
     const statusMap = {
       'correct': 'easy',
       'incorrect': 'forgot',
-      'hard': 'hard'
+      'hard': 'hard',
+      'excellent': 'easy',
+      'needs_improvement': 'hard'
     }
     const backendStatus = statusMap[status] || status
     
-    await this.postJudgement(card, backendStatus)
+    this.dispatch('please-respond', { detail: "Read your notes to the user: '" + notes + "', then follow on with the next question if you know it." })
+    // Call the postJudgement method with the updated status and notes
+    await this.postJudgement(card, backendStatus, notes)
   }
 
   // Helper to update a card's HTML content with new content from the server
@@ -318,8 +334,8 @@ export default class extends Controller {
   }
 
   // Common method to post judgment to backend
-  async postJudgement(card, status) {
-    console.log('Posting judgment:', { status, cardData: card?.dataset })
+  async postJudgement(card, status, notes = null) {
+    console.log('Posting judgment:', { status, notes, cardData: card?.dataset })
     
     // Play appropriate sound based on status
     const soundMap = {
@@ -338,7 +354,8 @@ export default class extends Controller {
         this.reviewUrlTemplate.replace(':id', card.dataset.flashcardId),
         {
           status: status,
-          side: card.dataset.flashcardSide
+          side: card.dataset.flashcardSide,
+          notes: notes
         }
       )
       

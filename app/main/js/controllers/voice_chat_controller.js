@@ -623,11 +623,16 @@ export default class extends Controller {
     this.sendEvent(contextEvent)
   }
 
-  pleaseRespond() {
-    console.log('Voice chat received please-respond')
+  pleaseRespond(event) {
     const response = {
       type: "response.create"
     }
+    
+    if (event.detail && Object.keys(event.detail).length > 0) {
+      response.instructions = event.detail;
+    }
+    console.log('Voice chat received please-respond', response)
+    
     this.sendEvent(response)
   }
 
