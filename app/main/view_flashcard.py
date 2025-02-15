@@ -65,20 +65,23 @@ class FlashCardViewSet(viewsets.ModelViewSet):
         now = timezone.now()
         queryset = self.get_queryset()
 
+        # Get the side to review
+        side = request.query_params.get('reviewSide', 'either')
+        
         # Get cards that need review (either never reviewed or due)
         review_needed = []
         unreviewed = []
 
         for card in queryset:
             # Check front side
-            if card.is_due_for_review('front'):
+            if side in ['front', 'either'] and card.is_due_for_review('front'):
                 if not card.front_last_review:
                     unreviewed.append((card, 'front'))
                 else:
                     review_needed.append((card, 'front'))
 
             # Check back side
-            if card.is_due_for_review('back'):
+            if side in ['back', 'either'] and card.is_due_for_review('back'):
                 if not card.back_last_review:
                     unreviewed.append((card, 'back'))
                 else:

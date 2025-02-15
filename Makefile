@@ -34,7 +34,11 @@ test: up
 
 # Run playwright tests in headed mode
 test-headed: up
-	docker-compose exec app pytest --headed
+	docker-compose exec app pytest -s --headed $(TEST_ARGS)
+
+# Run playwright tests in headed mode
+test-debug: up
+	docker-compose exec -e PWDEBUG=1 app pytest -s --headed $(TEST_ARGS)
 
 # Start Docker containers
 up:

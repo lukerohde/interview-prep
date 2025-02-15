@@ -6,7 +6,8 @@ export default class extends Controller {
     apiUrl: String,
     nextReviewUrl: String,
     reviewUrlTemplate: String,
-    deleteUrlTemplate: String
+    deleteUrlTemplate: String,
+    reviewSide: String  
   }
 
   connect() {
@@ -73,12 +74,14 @@ export default class extends Controller {
     if (!this.hasReviewContainerTarget) {
       return
     }
-
+    // Fetch the side we want to show, if its set
+    const side = this.reviewSideValue || 'either'
+    
     // Show the review area if it's hidden
     this.reviewContainerTarget.classList.remove('d-none')
 
     try {
-      const response = await fetch(this.nextReviewUrlValue)
+      const response = await fetch(`${this.nextReviewUrlValue}?reviewSide=${side}`)
       if (!response.ok) throw new Error('Failed to fetch next review')
       
       const data = await response.json()

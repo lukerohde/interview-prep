@@ -1,7 +1,8 @@
 # tests/factories.py
 import factory
 from django.contrib.auth.models import User
-from main.models import Application
+from main.models import Application, FlashCard
+from django.utils import timezone
 
 class UserFactory(factory.django.DjangoModelFactory):
     class Meta:
@@ -29,3 +30,22 @@ class ApplicationFactory(factory.django.DjangoModelFactory):
     status = 'draft'
     resume = factory.Sequence(lambda n: f"Resume content for application {n}")
     job_description = factory.Sequence(lambda n: f"Job description for position {n}")
+
+class FlashcardFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = FlashCard
+
+    user = factory.SubFactory(UserFactory)
+    front = factory.Sequence(lambda n: f"Question {n}")
+    back = factory.Sequence(lambda n: f"Answer {n}")
+    front_last_review = None
+    back_last_review = None
+    tags = ['test']
+
+    @factory.post_generation
+    def applications(self, create, extracted, **kwargs):
+        if not create:
+            return
+        if extracted:
+            for application in extracted:
+                self.applications.add(application)
