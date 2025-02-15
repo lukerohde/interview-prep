@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .models import Application, FlashCard
 from .forms import ApplicationForm
+from .serializers import FlashCardSerializer
+
 import requests
 from django.views.decorators.http import require_POST
 from django.contrib import messages
@@ -12,10 +14,40 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.http import JsonResponse
 import logging
+from rest_framework import viewsets, permissions
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status
+            
 # from django.contrib.auth import login
 
 # Configure logger
 logger = logging.getLogger(__name__)
+
+class ApplicationViewSet(viewsets.ModelViewSet):
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        return Application.objects.filter(owner=self.request.user)
+    
+    @action(detail=True, methods=['post'])
+    def generate_questions(self, request, pk=None):
+        """Generate interview questions for an application."""
+        application = self.get_object()
+        message = None
+        
+        try:
+            cards = application.generate_and_save_questions()
+            message = f'Generated {len(cards)} new questions!'
+        except Exception as e:
+            logger.error(f'Error generating questions: {str(e)}')
+            message = 'Failed to generate questions'
+            
+        if 'text/html' in request.headers.get('Accept', ''):
+            messages.success(request, message) if 'Generated' in message else messages.error(request, message)
+            return redirect('main:application_detail', pk=application.pk)
+            
+        return Response({'message': message}, status=status.HTTP_200_OK if 'Generated' in message else status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @login_required
 def application_list(request):
@@ -91,17 +123,4 @@ def application_delete(request, pk):
         return redirect('main:application_list')
     return render(request, 'main/application_confirm_delete.html', {'application': application})
 
-@login_required
-@require_POST
-def generate_questions(request, pk):
-    """Generate additional AI interview questions for an application"""
-    application = get_object_or_404(Application, pk=pk, owner=request.user)
-    
-    try:
-        created_cards = application.generate_and_save_questions()
-        messages.success(request, f'Generated {len(created_cards)} new questions!')
-    except Exception as e:
-        logger.error(f"Error generating questions: {str(e)}")
-        messages.error(request, 'Failed to generate new questions')
-    
-    return redirect('main:application_detail', pk=application.pk)
+

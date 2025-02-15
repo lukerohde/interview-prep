@@ -2,6 +2,12 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["previewContainer", "reviewContainer"]
+  static values = { 
+    apiUrl: String,
+    nextReviewUrl: String,
+    reviewUrlTemplate: String,
+    deleteUrlTemplate: String
+  }
 
   connect() {
     this.prompts = {}
@@ -18,9 +24,9 @@ export default class extends Controller {
   async handleFunctionCall(event) {
     const { name, arguments: args } = event.detail
 
-    if (name === 'create_flashcard') {
+    if (name === 'save_flashcard') {
       try {
-        const response = await this.postWithToken('/api/flashcards/', {
+        const response = await this.postWithToken(this.apiUrlValue, {
           front: args.front,
           back: args.back,
           tags: args.tags || []
@@ -72,7 +78,7 @@ export default class extends Controller {
     this.reviewContainerTarget.classList.remove('d-none')
 
     try {
-      const response = await fetch('/api/flashcards/next_review/')
+      const response = await fetch(this.nextReviewUrlValue)
       if (!response.ok) throw new Error('Failed to fetch next review')
       
       const data = await response.json()
@@ -156,7 +162,7 @@ export default class extends Controller {
 
     try {
       const response = await this.postWithToken(
-        `/api/flashcards/${card.dataset.flashcardId}/review/`,
+        this.reviewUrlTemplate.replace(':id', card.dataset.flashcardId),
         {
           status: status,
           side: card.dataset.flashcardSide
@@ -200,7 +206,7 @@ export default class extends Controller {
 
     try {
       const response = await this.postWithToken(
-        `/api/flashcards/${cardId}/`,
+        this.deleteUrlTemplateValue.replace(':id', cardId),
         {},
         'DELETE'
       )

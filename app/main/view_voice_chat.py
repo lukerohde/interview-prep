@@ -3,17 +3,19 @@ import json
 import yaml
 import logging
 import requests
-from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, permissions
+from rest_framework import status, permissions, viewsets
+from rest_framework.decorators import action
 from django.conf import settings
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-class SessionAPIView(APIView):
+class VoiceChatViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    def get(self, request):
+    
+    @action(detail=False, methods=['get'])
+    def session(self, request):
         logger.debug('Session request received')
         
         api_key = settings.OPENAI_API_KEY

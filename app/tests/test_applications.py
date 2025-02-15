@@ -253,7 +253,7 @@ def test_other_user_access(authenticated_client, user):
     assert Application.objects.filter(pk=other_application.pk).exists()
     
     # Test cannot generate questions for other user's application
-    response = authenticated_client.post(reverse('main:generate_questions', kwargs={'pk': other_application.pk}))
+    response = authenticated_client.post(reverse('main:api-application-generate-questions', kwargs={'pk': other_application.pk}))
     assert response.status_code == 404
 
 @pytest.mark.django_db
@@ -287,17 +287,12 @@ def test_generate_questions_endpoint(authenticated_client, user, mock_openai_res
     with patch('main.ai_helpers.call_openai', return_value=json.dumps(mock_openai_response)):
         # Make request to generate questions
         response = authenticated_client.post(
-            reverse('main:generate_questions', kwargs={'pk': application.pk})
+            reverse('main:api-application-generate-questions', kwargs={'pk': application.pk})
         )
         
-        # Verify redirect response
-        assert response.status_code == 302
-        assert response.url == reverse('main:application_detail', kwargs={'pk': application.pk})
-        
-        # Verify success message
-        messages = list(response.wsgi_request._messages)
-        assert len(messages) == 1
-        assert 'Generated 2 new questions!' in str(messages[0])
+        # Verify successful response
+        assert response.status_code == 200
+        assert response.json()['message'] == 'Generated 2 new questions!'
         
         # Verify cards were created
         flashcards = application.flashcards.all()
@@ -316,17 +311,12 @@ def test_generate_questions_error_handling(authenticated_client, user):
     with patch('main.ai_helpers.call_openai', side_effect=Exception('API Error')):
         # Make request to generate questions
         response = authenticated_client.post(
-            reverse('main:generate_questions', kwargs={'pk': application.pk})
+            reverse('main:api-application-generate-questions', kwargs={'pk': application.pk})
         )
         
-        # Verify redirect response
-        assert response.status_code == 302
-        assert response.url == reverse('main:application_detail', kwargs={'pk': application.pk})
-        
-        # Verify error message
-        messages = list(response.wsgi_request._messages)
-        assert len(messages) == 1
-        assert 'Failed to generate new questions' in str(messages[0])
+        # Verify error response
+        assert response.status_code == 500
+        assert response.json()['message'] == 'Failed to generate questions'
         
         # Verify no cards were created
         assert application.flashcards.count() == 0
