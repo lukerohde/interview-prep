@@ -111,12 +111,18 @@ class FlashCardViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         """Update a flashcard and return the updated HTML"""
-        response = super().update(request, *args, **kwargs)
-        if response.status_code == status.HTTP_200_OK:
-            card = self.get_object()
-            html = render_to_string('main/_flashcard_preview.html', {'flashcard': card})
-            response.data['html'] = html
-        return response
+        try:
+            response = super().update(request, *args, **kwargs)
+            if response.status_code == status.HTTP_200_OK:
+                card = self.get_object()
+                html = render_to_string('main/_flashcard_preview.html', {'flashcard': card})
+                response.data['html'] = html
+            return response
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     @action(detail=True, methods=['post'])
     def review(self, request, pk=None):
