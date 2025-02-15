@@ -36,11 +36,26 @@ class FlashCardViewSet(viewsets.GenericViewSet,
             serializer.is_valid(raise_exception=True)
             serializer.save()
             
-            # Return updated card HTML
-            html = render_to_string('main/_flashcard_preview.html', {'flashcard': card})
+            # Get the review side and show_both from request if present
+            review_side = request.query_params.get('reviewSide')
+            show_both = request.query_params.get('show_both') == 'true'
+            
+            # Always render preview HTML
+            preview_html = render_to_string('main/_flashcard_preview.html', {'flashcard': card})
+            
+            # Render review HTML only if we have review_side
+            review_html = None
+            if review_side:
+                review_html = render_to_string('main/_flashcard_review.html', {
+                    'card': card,
+                    'side': review_side,
+                    'show_both': show_both
+                })
+            
             return Response({
                 'data': serializer.data,
-                'html': html
+                'preview_html': preview_html,
+                'review_html': review_html
             })
             
         except FlashCard.DoesNotExist:

@@ -47,7 +47,8 @@ def test_flashcard_update(authenticated_client, user):
     
     # Check response
     assert response.status_code == 200
-    assert 'html' in response.json()
+    response_data = response.json()
+    assert 'preview_html' in response_data
     
     # Verify database update
     flashcard.refresh_from_db()
@@ -56,9 +57,9 @@ def test_flashcard_update(authenticated_client, user):
     assert flashcard.tags == ['updated', 'test']
     
     # Verify response HTML contains updated content
-    response_html = response.json()['html']
-    assert 'Updated question' in response_html
-    assert 'Updated answer' in response_html
+    preview_html = response_data['preview_html']
+    assert 'Updated question' in preview_html
+    assert 'Updated answer' in preview_html
 
 def test_flashcard_update_unauthorized(client, user):
     # Create a flashcard

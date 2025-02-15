@@ -72,15 +72,26 @@ export default class extends Controller {
 
   async aiUpdateCard(args) {
     console.log('AI updating card:', args)
-    const card = this.reviewContainerTarget.querySelector('.flashcard')
-    if (!card) {
+    const reviewCard = this.reviewContainerTarget.querySelector('.flashcard')
+    if (!reviewCard) {
       console.error('No card found to update')
       return
     }
 
     try {
+      // Find any existing preview card for this flashcard
+      const previewCard = this.previewContainerTarget.querySelector(
+        `.flashcard-preview[data-flashcard-id="${reviewCard.dataset.flashcardId}"]`
+      )
+
+      // Include review side in the request
+      const params = new URLSearchParams({
+        reviewSide: reviewCard.dataset.flashcardSide,
+        show_both: 'false'
+      })
+
       const response = await this.postWithToken(
-        this.apiUrlValue + card.dataset.flashcardId + '/',
+        `${this.apiUrlValue}${reviewCard.dataset.flashcardId}/?${params}`,
         {
           front: args.front,
           back: args.back,
@@ -92,8 +103,15 @@ export default class extends Controller {
       if (!response.ok) throw new Error('Failed to update flashcard')
 
       const data = await response.json()
-      if (data.html) {
-        this.updateCardContent(card, data.html)
+      
+      // Update the preview card if it exists
+      if (data.preview_html && previewCard) {
+        this.updateCardContent(previewCard, data.preview_html)
+      }
+      
+      // Update the review card
+      if (data.review_html) {
+        this.updateCardContent(reviewCard, data.review_html)
       }
     } catch (error) {
       console.error('Error updating flashcard:', error)
@@ -112,6 +130,8 @@ export default class extends Controller {
         {
           front: args.front,
           back: args.back,
+          front_notes: args.front_notes,
+          back_notes: args.back_notes,
           tags: args.tags || []
         },
         'PUT'
@@ -147,8 +167,8 @@ export default class extends Controller {
         throw new Error(errorMessage)
       }
 
-      if (data.html) {
-        this.updateCardContent(this.currentEditCard, data.html)
+      if (data.preview_html) {
+        this.updateCardContent(this.currentEditCard, data.preview_html)
         this.editModal.hide()
       }
     } catch (error) {
@@ -193,7 +213,7 @@ export default class extends Controller {
     const frontNotesTextarea = document.getElementById('editFlashcardFrontNotes')
     const backNotesTextarea = document.getElementById('editFlashcardBackNotes')
     const tagsInput = document.getElementById('editFlashcardTags')
-
+    
     // Split tags by comma and trim whitespace
     const tags = tagsInput.value
       .split(',')
@@ -314,20 +334,28 @@ export default class extends Controller {
 
   // Helper to update a card's HTML content with new content from the server
   updateCardContent(existingCard, updatedPreview, moveToTop = true) {
-    if (!existingCard || !updatedPreview || !this.hasPreviewContainerTarget) return
+    if (!existingCard || !updatedPreview) return
 
     // Create a temporary container to hold the new HTML
     const temp = document.createElement('div')
     temp.innerHTML = updatedPreview
     const updatedCard = temp.firstElementChild
 
-    // Replace the existing card with the updated one
-    if (moveToTop) {
-      this.previewContainerTarget.insertBefore(
-        updatedCard,
-        this.previewContainerTarget.firstChild
-      )
+    // Determine if this is a preview or review card
+    const isPreviewCard = existingCard.classList.contains('flashcard-preview')
+
+    if (isPreviewCard && this.hasPreviewContainerTarget) {
+      // Handle preview card update
+      if (moveToTop) {
+        this.previewContainerTarget.insertBefore(
+          updatedCard,
+          this.previewContainerTarget.firstChild
+        )
+      } else {
+        existingCard.parentNode.insertBefore(updatedCard, existingCard)
+      }
     } else {
+      // Handle review card update - always replace in place
       existingCard.parentNode.insertBefore(updatedCard, existingCard)
     }
     existingCard.remove()
