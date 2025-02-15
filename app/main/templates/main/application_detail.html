@@ -25,7 +25,7 @@
     <!-- Main Content Area -->
     <div class="col-md-7 d-flex flex-column">
       <!-- Review Area -->
-      <div data-flashcard-target="reviewContainer" class="review-area d-none bg-white rounded border p-3">
+      <div data-flashcard-target="reviewContainer" class="review-area d-none bg-white p-3">
         <!-- Active flashcard for review will be shown here -->
       </div>
 
@@ -67,7 +67,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar"></button>
       </div>
       <div class="offcanvas-body p-md-3 pt-md-0">
-        <div class="bg-white h-100 d-flex flex-column overflow-hidden">
+        <div class="bg-white rounded border h-100 d-flex flex-column overflow-hidden">
         
             <div class="nav flex-column d-md-none">
                 <a class="text-decoration-none text-dark px-3 py-2 {% if request.resolver_match.url_name == 'application_list' %}fw-bold{% endif %}" 
