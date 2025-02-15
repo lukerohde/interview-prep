@@ -46,4 +46,67 @@ class TestFlashcardUI(UITestBase, StaticLiveServerTestCase):
         no_review_message = self.page.locator("text='No cards due for review!'")
         assert no_review_message.is_visible(), "Expected 'No cards due for review!' message when only back side is due"
 
+    def test_edit_flashcard_categories(self):
+        # Create a user and application
+        user = UserFactory()
+        application = ApplicationFactory(owner=user)
+        
+        # Create a flashcard with some initial tags
+        flashcard = FlashcardFactory(
+            user=user,
+            front="Initial front",
+            back="Initial back",
+            tags=["python", "django"]
+        )
+        flashcard.applications.add(application)
+        
+        # Setup the user session and navigate to the application detail page
+        self.setup_user_session(self.page, user)
+        self.page.goto(f"{self.live_server.url}{reverse('main:application_detail', kwargs={'pk': application.pk})}")
+        self.wait_for_page_load(self.page)
+        
+        # Find and click the edit button on the flashcard
+        edit_button = self.page.locator(".flashcard-preview button[data-action='flashcard#editCard']")
+        edit_button.click()
+        
+        # Get the card ID we're editing
+        card_id = self.page.locator(".flashcard-preview").get_attribute("data-flashcard-id")
+        
+        # Wait for modal to be visible and form elements to be loaded
+        modal = self.page.locator("#editFlashcardModal")
+        modal.wait_for(state="visible")
+        
+        # Fill in the form
+        front_textarea = self.page.locator("#editFlashcardFront")
+        back_textarea = self.page.locator("#editFlashcardBack")
+        tags_input = self.page.locator("#editFlashcardTags")
+        
+        # Verify initial values
+        assert front_textarea.input_value() == "Initial front"
+        assert back_textarea.input_value() == "Initial back"
+        assert tags_input.input_value() == "python,django"
+        
+        # Update the values
+        front_textarea.fill("Updated front")
+        back_textarea.fill("Updated back")
+        tags_input.fill("python,algorithms,data-structures")
+        
+        # Click save and wait for modal to be hidden (indicating successful save)
+        save_button = self.page.locator("button[data-action='flashcard#saveEdit']")
+        save_button.click()
+        modal.wait_for(state="hidden")
+        
+        # Wait for the updated content to appear
+        card_selector = f".flashcard-preview[data-flashcard-id='{card_id}'] .flashcard-content div:text-is('Updated front')"
+        self.page.wait_for_selector(card_selector)
+        
+        # Now verify all the updates
+        updated_card = self.page.locator(f".flashcard-preview[data-flashcard-id='{card_id}']")
+        assert updated_card.locator(".flashcard-content .flashcard-front div").text_content() == "Updated front"
+        assert updated_card.locator(".flashcard-content .flashcard-back div").text_content() == "Updated back"
+        
+        # Verify all tags are present
+        tags = updated_card.locator(".flashcard-tags .badge")
+        tag_texts = [tag.text_content() for tag in tags.all()]
+        assert set(tag_texts) == {"python", "algorithms", "data-structures"}
         

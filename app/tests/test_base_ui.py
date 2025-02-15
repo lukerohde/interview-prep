@@ -10,13 +10,27 @@ class UITestBase:
         """Set up a logged-in user session for the page."""
         client = Client()
         client.force_login(user)
+        
+        # Get CSRF token by making a GET request
+        response = client.get(reverse('main:application_list'))
+        csrf_token = client.cookies['csrftoken']
+        
+        # Add both session and CSRF cookies
         session_cookie = client.cookies['sessionid']
-        page.context.add_cookies([{
-            'name': 'sessionid',
-            'value': session_cookie.value,
-            'domain': 'localhost',
-            'path': '/',
-        }])
+        page.context.add_cookies([
+            {
+                'name': 'sessionid',
+                'value': session_cookie.value,
+                'domain': 'localhost',
+                'path': '/',
+            },
+            {
+                'name': 'csrftoken',
+                'value': csrf_token.value,
+                'domain': 'localhost',
+                'path': '/',
+            }
+        ])
     
     def wait_for_toast(self, page, expected_text=None):
         """Wait for a toast notification and optionally verify its text."""

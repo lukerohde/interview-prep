@@ -10,8 +10,12 @@ export default class extends Controller {
     reviewSide: String  
   }
 
+  editModal = null
+  currentEditCard = null
+
   connect() {
     this.prompts = {}
+    this.editModal = new bootstrap.Modal(document.getElementById('editFlashcardModal'))
   }
 
   handlePromptsAvailable(event) {
@@ -36,7 +40,7 @@ export default class extends Controller {
         await this.judgeCard(args)
         break
       case 'update_flashcard':
-        await this.updateCard(args)
+        await this.aiUpdateCard(args)
         break
       default:
         console.warn(`Unknown function call: ${name}`)
@@ -66,8 +70,8 @@ export default class extends Controller {
     }
   }
 
-  async updateCard(args) {
-    console.log('Updating card:', args)
+  async aiUpdateCard(args) {
+    console.log('AI updating card:', args)
     const card = this.reviewContainerTarget.querySelector('.flashcard')
     if (!card) {
       console.error('No card found to update')
@@ -95,7 +99,108 @@ export default class extends Controller {
       console.error('Error updating flashcard:', error)
     }
   }
+
+  async userUpdateCard(args) {
+    if (!this.currentEditCard) {
+      console.error('No card selected for update')
+      return
+    }
+
+    try {
+      const response = await this.postWithToken(
+        this.apiUrlValue + this.currentEditCard.dataset.flashcardId + '/',
+        {
+          front: args.front,
+          back: args.back,
+          tags: args.tags || []
+        },
+        'PUT'
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        // Format validation errors from DRF
+        let errorMessage = 'Failed to update flashcard'
+        if (data.error) {
+          errorMessage = data.error
+        } else if (data.detail) {
+          errorMessage = data.detail
+        } else if (typeof data === 'object') {
+          // Handle DRF validation error format
+          const errors = []
+          for (const [field, fieldErrors] of Object.entries(data)) {
+            if (Array.isArray(fieldErrors)) {
+              errors.push(`${field}: ${fieldErrors.join(', ')}`)
+            }
+          }
+          if (errors.length > 0) {
+            errorMessage = errors.join('\n')
+          }
+        }
+
+        const errorDiv = document.getElementById('editFlashcardError')
+        if (errorDiv) {
+          errorDiv.innerHTML = errorMessage.replace(/\n/g, '<br>')
+          errorDiv.classList.remove('d-none')
+        }
+        throw new Error(errorMessage)
+      }
+
+      if (data.html) {
+        this.updateCardContent(this.currentEditCard, data.html)
+        this.editModal.hide()
+      }
+    } catch (error) {
+      console.error('Error updating flashcard:', error)
+      // Show error in modal if we haven't already
+      if (!document.getElementById('editFlashcardError').textContent) {
+        const errorDiv = document.getElementById('editFlashcardError')
+        if (errorDiv) {
+          errorDiv.textContent = error.message
+          errorDiv.classList.remove('d-none')
+        }
+      }
+    }
+  }
   
+  editCard(event) {
+    const button = event.target.closest('button')
+    if (!button) return
+
+    const card = button.closest('.flashcard, .flashcard-preview')
+    if (!card) return
+
+    this.currentEditCard = card
+    const frontTextarea = document.getElementById('editFlashcardFront')
+    const backTextarea = document.getElementById('editFlashcardBack')
+    const tagsInput = document.getElementById('editFlashcardTags')
+
+    frontTextarea.value = card.dataset.flashcardFrontValue
+    backTextarea.value = card.dataset.flashcardBackValue
+    tagsInput.value = card.dataset.flashcardTagsValue || ''
+
+    this.editModal.show()
+  }
+
+  saveEdit() {
+    const frontTextarea = document.getElementById('editFlashcardFront')
+    const backTextarea = document.getElementById('editFlashcardBack')
+    const tagsInput = document.getElementById('editFlashcardTags')
+
+    // Split tags by comma and trim whitespace
+    const tags = tagsInput.value
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0)
+
+    this.userUpdateCard({
+      front: frontTextarea.value,
+      back: backTextarea.value,
+      tags: tags
+    })
+  }
+
   appendFlashcard(flashcard) {
     if (flashcard && this.hasPreviewContainerTarget) {
       // Prepend the new flashcards to the preview container

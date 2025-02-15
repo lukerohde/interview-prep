@@ -5,7 +5,8 @@ This partial is used to render a preview of a flashcard in the sidebar
 <div class="card mb-2 flashcard-preview flashcard border border-2" 
      data-flashcard-id="{{ flashcard.id }}"
      data-flashcard-front-value="{{ flashcard.front }}"
-     data-flashcard-back-value="{{ flashcard.back }}">
+     data-flashcard-back-value="{{ flashcard.back }}"
+     data-flashcard-tags-value="{{ flashcard.tags|join:',' }}">
   <div class="card-body p-2 position-relative">
     <button class="btn btn-sm btn-outline-primary position-absolute top-0 end-0 mt-1 me-1" 
             data-action="flashcard#playFullCard">
@@ -29,11 +30,18 @@ This partial is used to render a preview of a flashcard in the sidebar
       </div>
     {% endif %}
     <div class="d-flex justify-content-between align-items-center">
-      <button class="btn btn-sm btn-link text-danger p-0" 
-              data-action="flashcard#deleteCard"
-              title="Delete flashcard">
-        <i class="bi bi-trash"></i>
-      </button>
+      <div>
+        <button class="btn btn-sm btn-link text-primary p-0 me-2" 
+                data-action="flashcard#editCard"
+                title="Edit flashcard">
+          <i class="bi bi-pencil"></i>
+        </button>
+        <button class="btn btn-sm btn-link text-danger p-0" 
+                data-action="flashcard#deleteCard"
+                title="Delete flashcard">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>
       <div class="flashcard-stats">
         {% with total_reviews=flashcard.front_review_count|add:flashcard.back_review_count %}
           <span class="badge bg-info me-1" title="Total Reviews">

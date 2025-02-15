@@ -1,0 +1,36 @@
+{% comment %}
+This partial is used to render the edit flashcard modal
+{% endcomment %}
+
+<div class="modal fade" id="editFlashcardModal" tabindex="-1" aria-labelledby="editFlashcardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editFlashcardModalLabel">Edit Flashcard</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="editFlashcardError" class="alert alert-danger d-none mb-3"></div>
+                <form id="editFlashcardForm">
+                    <div class="mb-3">
+                        <label for="editFlashcardFront" class="form-label">Front</label>
+                        <textarea class="form-control" id="editFlashcardFront" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editFlashcardBack" class="form-label">Back</label>
+                        <textarea class="form-control" id="editFlashcardBack" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editFlashcardTags" class="form-label">Categories (comma-separated)</label>
+                        <input type="text" class="form-control" id="editFlashcardTags" placeholder="e.g. python, algorithms, data-structures">
+                        <div class="form-text">Enter categories separated by commas</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" data-action="flashcard#saveEdit">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>

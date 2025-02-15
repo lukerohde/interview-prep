@@ -10,7 +10,10 @@ from random import choice
 from .models import FlashCard, ReviewStatus
 from .serializers import FlashCardSerializer
 
-class FlashCardViewSet(viewsets.ModelViewSet):
+class FlashCardViewSet(viewsets.GenericViewSet,
+                     viewsets.mixins.ListModelMixin,
+                     viewsets.mixins.CreateModelMixin,
+                     viewsets.mixins.DestroyModelMixin):
     serializer_class = FlashCardSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -21,6 +24,27 @@ class FlashCardViewSet(viewsets.ModelViewSet):
             models.F('back_last_review').desc(nulls_last=True),
             '-created_at'
         )
+
+    def update(self, request, pk=None):
+        """Custom update that handles both user edits and AI updates"""
+        try:
+            # Get card from filtered queryset (404 if not found or not owned)
+            card = self.get_queryset().get(pk=pk)
+            
+            # Validate and update
+            serializer = self.get_serializer(card, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            
+            # Return updated card HTML
+            html = render_to_string('main/_flashcard_preview.html', {'flashcard': card})
+            return Response({
+                'data': serializer.data,
+                'html': html
+            })
+            
+        except FlashCard.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
     
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -109,20 +133,7 @@ class FlashCardViewSet(viewsets.ModelViewSet):
 
         return Response({'html': html})
 
-    def update(self, request, *args, **kwargs):
-        """Update a flashcard and return the updated HTML"""
-        try:
-            response = super().update(request, *args, **kwargs)
-            if response.status_code == status.HTTP_200_OK:
-                card = self.get_object()
-                html = render_to_string('main/_flashcard_preview.html', {'flashcard': card})
-                response.data['html'] = html
-            return response
-        except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+
 
     @action(detail=True, methods=['post'])
     def review(self, request, pk=None):
