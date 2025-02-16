@@ -327,7 +327,6 @@ export default class extends Controller {
     }
     const backendStatus = statusMap[status] || status
     
-    this.dispatch('please-respond', { detail: "Read your notes to the user: '" + notes + "', then follow on with the next question if you know it." })
     // Call the postJudgement method with the updated status and notes
     await this.postJudgement(card, backendStatus, notes)
   }
