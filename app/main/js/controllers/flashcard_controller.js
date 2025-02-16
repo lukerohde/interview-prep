@@ -313,8 +313,8 @@ export default class extends Controller {
 
   // Handle AI judgment of user's response
   async handleAIJudgement(args, card) {
-    status = args.status
-    notes = args.critique
+    const status = args.status
+    const notes = args.critique
     if (!card || !status) return
 
     // Convert AI judgment to backend status values
@@ -364,22 +364,10 @@ export default class extends Controller {
   // Common method to post judgment to backend
   async postJudgement(card, status, notes = null) {
     console.log('Posting judgment:', { status, notes, cardData: card?.dataset })
-    
-    // Play appropriate sound based on status
-    const soundMap = {
-      'easy': new Audio('/static/sounds/correct.mp3'),  // nice ting
-      'forgot': new Audio('/static/sounds/incorrect.mp3'),  // bingbong
-      'hard': new Audio('/static/sounds/hard.mp3')  // boop
-    }
-    
-    const sound = soundMap[status]
-    if (sound) {
-      sound.play().catch(error => console.error('Error playing sound:', error))
-    }
-
+    console.log(this.reviewUrlTemplateValue)
     try {
       const response = await this.postWithToken(
-        this.reviewUrlTemplate.replace(':id', card.dataset.flashcardId),
+        this.reviewUrlTemplateValue.replace(':id', card.dataset.flashcardId),
         {
           status: status,
           side: card.dataset.flashcardSide,
@@ -397,6 +385,18 @@ export default class extends Controller {
           `.flashcard-preview[data-flashcard-id="${data.updated_card_id}"]`
         )
         this.updateCardContent(existingCard, data.updated_preview)
+      }
+
+      // Play appropriate sound based on status
+      const soundMap = {
+        'easy': new Audio('/static/sounds/correct.mp3'),  // nice ting
+        'forgot': new Audio('/static/sounds/incorrect.mp3'),  // bingbong
+        'hard': new Audio('/static/sounds/hard.mp3')  // boop
+      }
+      
+      const sound = soundMap[status]
+      if (sound) {
+        sound.play().catch(error => console.error('Error playing sound:', error))
       }
 
       // Fetch the next card for review
