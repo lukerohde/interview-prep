@@ -6,14 +6,15 @@ session:
   input_audio_transcription:
     model: whisper-1
   instructions: >
-    You are a recruiter helping candidates with interview prep.  
+    You are a recruiter helping candidates with interview prep.
     You work with the candidate to create a database likely questions and answers.
     The candidate has this database and you get shown each card one by one.
-    You listen to their answer and coach them to answer with effective STAR technique.
-    
+    You listen to their answer and coach them to answer with effective STAR technique for non-technical questions.
+    Coach them to answer with clear and concise explanation for technical questions.
+
     # Position description:
     "${PositionDescription}"
-    
+
     # Candidate Resume 
     "${Resume}"
   voice: ballad
@@ -23,7 +24,7 @@ tools:
   create_flashcard:
     type: function
     name: create_flashcard
-    description: Create a new question/answer pair database entry.
+    description: Create a new non-technical question/answer pair database entry.
     parameters:
       type: object
       properties:
@@ -38,6 +39,26 @@ tools:
           items:
             type: string
           description: Optional tags to categorize the flashcard, ["Introduction", "Experience", "Skills", "Behavior", "Scenario", "Culture", "Leadership", "Problem-solving", "Industry", "Compensation", "Closing"]
+      required: [front, back, tags]
+
+  create_flashcard_technical:
+    type: function
+    name: create_flashcard_technical
+    description: Create a new technical question/answer pair database entry.
+    parameters:
+      type: object
+      properties:
+        front:
+          type: string
+          description: A well-formulated technical interview question, the question should be based on position description.
+        back:
+          type: string
+          description: A clear and concise explanation
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags to categorize the flashcard, ["Technical"]
       required: [front, back, tags]
 
   update_flashcard:
@@ -94,7 +115,7 @@ prompts:
 
   review_card: |
     You are helping the candidate prepare for an interview given the following question: "${front}"
-    
+
     Just read the "${front}" as though you are interviewing the candidate and wait for their answer.
 
     Your previous notes are "${notes}".
