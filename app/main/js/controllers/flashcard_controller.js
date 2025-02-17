@@ -31,6 +31,7 @@ export default class extends Controller {
 
     switch (name) {
       case 'create_flashcard':
+      case 'create_flashcard_technical':
         await this.createFlashcard(args)
         break
       case 'start_review':
