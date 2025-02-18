@@ -1,3 +1,22 @@
+name: Interview Coach
+url-path: interview-coach
+deck-name: Job Application
+prompt-override-whitelist:
+  - session.instructions
+  - prompts.play_full_card
+  - prompts.review_card
+  - tools.create_flashcard.description
+  - tools.create_flashcard.parameters.front
+  - tools.create_flashcard.parameters.back
+  - tools.create_flashcard.parameters.tags
+  - tools.update_flashcard.description
+  - tools.update_flashcard.parameters.front
+  - tools.update_flashcard.parameters.back
+  - tools.update_flashcard.parameters.tags
+  - tools.assess_answer.description
+  - tools.assess_answer.parameters.status
+  - tools.assess_answer.parameters.critique
+  - tools.start_review.description
 session:
   model: gpt-4o-mini-realtime-preview-2024-12-17
   modalities: [text, audio]

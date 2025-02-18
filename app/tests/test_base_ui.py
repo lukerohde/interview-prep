@@ -11,8 +11,8 @@ class UITestBase:
         client = Client()
         client.force_login(user)
         
-        # Get CSRF token by making a GET request
-        response = client.get(reverse('main:application_list'))
+        # Get CSRF token by making a GET request to home page
+        response = client.get(reverse('main:home'))
         csrf_token = client.cookies['csrftoken']
         
         # Add both session and CSRF cookies

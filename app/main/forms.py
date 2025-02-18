@@ -1,38 +1,58 @@
 from django import forms
-from .models import Application
+from .models import Deck, Document
 
-class ApplicationForm(forms.ModelForm):
+class DeckForm(forms.ModelForm):
     class Meta:
-        model = Application
-        fields = ['name', 'status', 'resume', 'job_description']
+        model = Deck
+        fields = ['name', 'deck_type', 'status']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg',
-                'placeholder': 'Enter the position or company name'
+                'placeholder': 'Enter a name for your deck'
+            }),
+            'deck_type': forms.Select(attrs={
+                'class': 'form-select',
             }),
             'status': forms.Select(attrs={
                 'class': 'form-select',
             }),
-            'resume': forms.Textarea(attrs={
+        }
+        labels = {
+            'name': 'Deck Name',
+            'deck_type': 'Type',
+            'status': 'Status'
+        }
+        help_texts = {
+            'name': 'Enter a descriptive name for your deck',
+            'deck_type': 'Choose the type of content this deck will contain',
+            'status': 'Current status of your deck'
+        } 
+
+class DocumentForm(forms.ModelForm):
+    file = forms.FileField(required=False, widget=forms.FileInput(attrs={
+        'class': 'form-control',
+        'accept': '.pdf,.doc,.docx,.txt'
+    }))
+
+    class Meta:
+        model = Document
+        fields = ['name', 'content']
+        widgets = {
+            'name': forms.TextInput(attrs={
                 'class': 'form-control',
-                'rows': 10,
-                'placeholder': 'Paste your resume or CV content here'
+                'placeholder': 'Enter a name for this document'
             }),
-            'job_description': forms.Textarea(attrs={
+            'content': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 10,
-                'placeholder': 'Paste the full job description here'
+                'placeholder': 'Enter or paste the document content here'
             }),
         }
         labels = {
-            'name': 'Position/Company',
-            'status': 'Application Status',
-            'resume': 'Resume/CV',
-            'job_description': 'Job Description'
+            'name': 'Document Name',
+            'content': 'Content',
         }
         help_texts = {
-            'name': 'Enter the name of the position or company you are applying to',
-            'status': 'Current status of your application',
-            'resume': 'Your resume or CV content that will be used for this application',
-            'job_description': 'The full job description from the posting'
-        } 
+            'name': 'A descriptive name for this document',
+            'content': 'The text content that will be used for AI processing'
+        }

@@ -3,33 +3,135 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from uuid import uuid4
 from enum import Enum
+import yaml
 from .utils import do_something_handy
 from .ai_helpers import generate_interview_questions
 
-class Application(models.Model):
-    STATUS_CHOICES = [
-        ('draft', 'Draft'),
-        ('submitted', 'Submitted'),
-        ('in_progress', 'In Progress'),
-        ('rejected', 'Rejected'),
-        ('accepted', 'Accepted'),
-    ]
+class TutorConfig:
+    @staticmethod
+    def load_config(config_path, user=None):
+        """Load tutor config from YAML and apply user overrides"""
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+        
+        if user:
+            # Get user's overrides for this tutor
+            overrides = {
+                override.key: override.value 
+                for override in user.prompt_overrides.filter(
+                    tutor_url_path=config.get('url_path')
+                )
+            }
+            
+            # Apply overrides using dotted path notation
+            for key, value in overrides.items():
+                target = config
+                *path_parts, final_key = key.split('.')
+                
+                # Navigate to the correct nested dictionary
+                for part in path_parts:
+                    if part not in target:
+                        target[part] = {}
+                    target = target[part]
+                target[final_key] = value
+                
+        return config
 
+class Tutor(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    name = models.CharField(max_length=255, help_text='Name of the position or company')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
-    resume = models.TextField(help_text='Your resume or CV content')
-    job_description = models.TextField(help_text='Full job description')
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='applications')
+    name = models.CharField(max_length=255, help_text='Name of the tutor')
+    deck_name = models.CharField(max_length=255, help_text='Display name for decks of this type')
+    url_path = models.CharField(max_length=255, unique=True, help_text='URL path for this tutor (e.g. interview-coach)')
+    config_path = models.CharField(max_length=255, unique=True, null=True, blank=True, help_text='Path to the YAML config file')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.name} - {self.status}"
+        return self.name
+
+    def get_config(self, user=None):
+        """Get tutor config with optional user overrides"""
+        if not self.config_path:
+            raise ValueError("No config path set for this tutor")
+        return TutorConfig.load_config(self.config_path, user)
+
+    class Meta:
+        ordering = ['name']
+
+class TutorPromptOverride(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='prompt_overrides')
+    tutor_url_path = models.CharField(max_length=255, help_text='URL path of the tutor')
+    key = models.CharField(max_length=255, help_text='Dotted path to the prompt key')
+    value = models.TextField(help_text='Override value for the prompt')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['user', 'tutor_url_path', 'key']
+        ordering = ['tutor_url_path', 'key']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.tutor_url_path} - {self.key}"
+
+class Document(models.Model):
+    class DocumentType(models.TextChoices):
+        RESUME = 'resume', 'Resume'
+        JOB_DESCRIPTION = 'job_description', 'Job Description'
+        STUDY_MATERIAL = 'study_material', 'Study Material'
+        LANGUAGE_TEXT = 'language_text', 'Language Text'
+
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+    name = models.CharField(max_length=255, help_text='Name of the document')
+    url = models.URLField(blank=True, null=True, help_text='URL to the document in S3')
+    content = models.TextField(help_text='Extracted or provided text content')
+    document_type = models.CharField(
+        max_length=50,
+        choices=DocumentType.choices,
+        default=DocumentType.STUDY_MATERIAL,
+        help_text='Type of document'
+    )
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='documents')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['-updated_at']
+
+class Deck(models.Model):
+    class DeckType(models.TextChoices):
+        JOB_APPLICATION = 'job_application', 'Job Application'
+        STUDY = 'study', 'Study Materials'
+        LANGUAGE = 'language', 'Language Learning'
+
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+    name = models.CharField(max_length=255, help_text='Name of the deck')
+    deck_type = models.CharField(
+        max_length=50,
+        choices=DeckType.choices,
+        default=DeckType.STUDY,
+        help_text='Type of deck'
+    )
+    tutor = models.ForeignKey(Tutor, on_delete=models.CASCADE, related_name='decks')
+    documents = models.ManyToManyField(Document, related_name='decks', blank=True)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='decks')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    status = models.CharField(
+        max_length=50,
+        default='active',
+        help_text='Status of the deck (e.g., active, archived)'
+    )
+
+    def __str__(self):
+        return f"{self.name} ({self.tutor.deck_name})"
 
     @property
     def title(self):
-        return str(self)  # Uses the same format as __str__
+        return str(self)
 
     class Meta:
         ordering = ['-updated_at']
@@ -42,11 +144,14 @@ class Application(models.Model):
         ]
 
     def generate_and_save_questions(self):
-        """Generate and save new AI interview questions"""
+        """Generate and save new AI interview questions from documents"""
         existing_questions = self.get_existing_questions()
+        
+        # Combine all document content
+        combined_content = "\n\n".join([doc.content for doc in self.documents.all()])
+        
         questions = generate_interview_questions(
-            job_description=self.job_description,
-            resume=self.resume,
+            content=combined_content,
             existing_questions=existing_questions
         )
 
@@ -58,7 +163,7 @@ class Application(models.Model):
                 back=q['suggested_answer'],
                 tags=[q['category'], 'auto-generated']
             )
-            flashcard.applications.add(self)
+            flashcard.decks.add(self)
             created_cards.append(flashcard)
 
         return created_cards
@@ -80,7 +185,7 @@ class FlashCard(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     tags = models.JSONField(default=list)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='flashcards')
-    applications = models.ManyToManyField(Application, related_name='flashcards', blank=True)
+    decks = models.ManyToManyField(Deck, related_name='flashcards', blank=True)
 
     # Front review fields
     front_last_review = models.DateTimeField(null=True, blank=True)

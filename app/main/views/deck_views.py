@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .models import Application, FlashCard
-from .forms import ApplicationForm
+from .models import Deck, FlashCard
+from .forms import DeckForm
 from .serializers import FlashCardSerializer
 
 import requests
@@ -24,11 +24,18 @@ from rest_framework import status
 # Configure logger
 logger = logging.getLogger(__name__)
 
-class ApplicationViewSet(viewsets.ModelViewSet):
+class DeckViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        return Application.objects.filter(owner=self.request.user)
+        queryset = Deck.objects.filter(owner=self.request.user)
+        
+        # Filter by tutor if specified
+        tutor_id = self.request.query_params.get('tutor')
+        if tutor_id:
+            queryset = queryset.filter(tutor_id=tutor_id)
+            
+        return queryset
     
     @action(detail=True, methods=['post'])
     def generate_questions(self, request, pk=None):

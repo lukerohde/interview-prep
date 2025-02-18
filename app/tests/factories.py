@@ -1,7 +1,7 @@
 # tests/factories.py
 import factory
 from django.contrib.auth.models import User
-from main.models import Application, FlashCard
+from main.models import Deck, FlashCard
 from django.utils import timezone
 
 class UserFactory(factory.django.DjangoModelFactory):
@@ -21,15 +21,14 @@ class UserFactory(factory.django.DjangoModelFactory):
         if create:
             obj.save()
 
-class ApplicationFactory(factory.django.DjangoModelFactory):
+class DeckFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = Application
+        model = Deck
     
     owner = factory.SubFactory(UserFactory)
-    name = factory.Sequence(lambda n: f"Software Engineer {n}")
-    status = 'draft'
-    resume = factory.Sequence(lambda n: f"Resume content for application {n}")
-    job_description = factory.Sequence(lambda n: f"Job description for position {n}")
+    name = factory.Sequence(lambda n: f"Study Deck {n}")
+    status = 'active'
+    deck_type = 'study'
 
 class FlashcardFactory(factory.django.DjangoModelFactory):
     class Meta:
@@ -43,9 +42,9 @@ class FlashcardFactory(factory.django.DjangoModelFactory):
     tags = ['test']
 
     @factory.post_generation
-    def applications(self, create, extracted, **kwargs):
+    def decks(self, create, extracted, **kwargs):
         if not create:
             return
         if extracted:
-            for application in extracted:
-                self.applications.add(application)
+            for deck in extracted:
+                self.decks.add(deck)

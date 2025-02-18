@@ -5,16 +5,15 @@ from django.contrib.auth.signals import user_logged_in
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.contrib import messages
-from .models import Application
+from .models import Deck
 
 @receiver(post_save, sender=User)
-def create_user_application(sender, instance, created, **kwargs):
+def create_user_deck(sender, instance, created, **kwargs):
     if created:
-        Application.objects.create(
-            name=f"Welcome {instance.username}! Create your first job application",
+        Deck.objects.create(
+            name=f"Welcome {instance.username}! Create your first deck",
+            deck_type=Deck.DeckType.JOB_APPLICATION,
             status='draft',
-            resume='Paste your resume here...',
-            job_description='Paste the job description here...',
             owner=instance
         )
         

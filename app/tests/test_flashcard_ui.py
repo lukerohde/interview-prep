@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch
 from django.urls import reverse
 from django.contrib.staticfiles.testing import StaticLiveServerTestCase
-from .factories import UserFactory, ApplicationFactory, FlashcardFactory
+from .factories import UserFactory, DeckFactory, FlashcardFactory
 from .test_base_ui import UITestBase
 from django.utils import timezone
 from datetime import timedelta
@@ -16,9 +16,9 @@ class TestFlashcardUI(UITestBase, StaticLiveServerTestCase):
         return self
 
     def test_start_review_and_side_configuration(self):
-        # Create a user and application
+        # Create a user and deck
         user = UserFactory()
-        application = ApplicationFactory(owner=user)
+        deck = DeckFactory(owner=user)
         
         # Create a flashcard that's due for review on the back side only
         now = timezone.now()
@@ -27,11 +27,11 @@ class TestFlashcardUI(UITestBase, StaticLiveServerTestCase):
             front_last_review=now,  # Front reviewed now (not due)
             back_last_review=now - timedelta(days=2)  # Back reviewed 2 days ago (due)
         )
-        flashcard.applications.add(application)
+        flashcard.decks.add(deck)
         
-        # Setup the user session and navigate to the application detail page
+        # Setup the user session and navigate to the deck detail page
         self.setup_user_session(self.page, user)
-        self.page.goto(f"{self.live_server.url}{reverse('main:application_detail', kwargs={'pk': application.pk})}")
+        self.page.goto(f"{self.live_server.url}{reverse('main:deck_detail', kwargs={'pk': deck.pk})}")
         self.wait_for_page_load(self.page)
         
         # Click the review button
@@ -47,9 +47,9 @@ class TestFlashcardUI(UITestBase, StaticLiveServerTestCase):
         assert no_review_message.is_visible(), "Expected 'No cards due for review!' message when only back side is due"
 
     def test_review_flashcard_easy_assessment(self):
-        # Create a user and application
+        # Create a user and deck
         user = UserFactory()
-        application = ApplicationFactory(owner=user)
+        deck = DeckFactory(owner=user)
         
         # Create multiple flashcards with different review times
         now = timezone.now()
@@ -62,7 +62,7 @@ class TestFlashcardUI(UITestBase, StaticLiveServerTestCase):
             front_last_review=now - timedelta(days=2),  # Reviewed 2 days ago
             front_interval=1  # Make it due for review
         )
-        target_card.applications.add(application)
+        target_card.decks.add(deck)
         
         # Create some newer cards that were reviewed recently (should appear at top initially)
         recent_cards = []
@@ -74,12 +74,12 @@ class TestFlashcardUI(UITestBase, StaticLiveServerTestCase):
                 front_last_review=now - timedelta(hours=i),  # Reviewed within last few hours
                 front_interval=60 * 24  # 24 hour interval, so not due yet
             )
-            card.applications.add(application)
+            card.decks.add(deck)
             recent_cards.append(card)
         
-        # Setup the user session and navigate to the application detail page
+        # Setup the user session and navigate to the deck detail page
         self.setup_user_session(self.page, user)
-        self.page.goto(f"{self.live_server.url}{reverse('main:application_detail', kwargs={'pk': application.pk})}")
+        self.page.goto(f"{self.live_server.url}{reverse('main:deck_detail', kwargs={'pk': deck.pk})}")
         self.wait_for_page_load(self.page)
         
         # Click the review button
@@ -106,9 +106,9 @@ class TestFlashcardUI(UITestBase, StaticLiveServerTestCase):
         
        
     def test_edit_flashcard_notes(self):
-        # Create a user and application
+        # Create a user and deck
         user = UserFactory()
-        application = ApplicationFactory(owner=user)
+        deck = DeckFactory(owner=user)
         
         # Create a flashcard with some initial notes
         flashcard = FlashcardFactory(
@@ -118,11 +118,11 @@ class TestFlashcardUI(UITestBase, StaticLiveServerTestCase):
             front_notes='Remember to mention IoC containers',
             back_notes='Good to mention Spring Framework as an example'
         )
-        flashcard.applications.add(application)
+        flashcard.decks.add(deck)
         
-        # Setup the user session and navigate to the application detail page
+        # Setup the user session and navigate to the deck detail page
         self.setup_user_session(self.page, user)
-        self.page.goto(f"{self.live_server.url}{reverse('main:application_detail', kwargs={'pk': application.pk})}")
+        self.page.goto(f"{self.live_server.url}{reverse('main:deck_detail', kwargs={'pk': deck.pk})}")
         self.wait_for_page_load(self.page)
         
         # Click the edit button on the flashcard
@@ -161,9 +161,9 @@ class TestFlashcardUI(UITestBase, StaticLiveServerTestCase):
         assert flashcard.back_notes == 'Use Spring and ASP.NET Core as examples'
 
     def test_edit_flashcard_categories(self):
-        # Create a user and application
+        # Create a user and deck
         user = UserFactory()
-        application = ApplicationFactory(owner=user)
+        deck = DeckFactory(owner=user)
         
         # Create a flashcard with some initial tags
         flashcard = FlashcardFactory(
@@ -172,11 +172,11 @@ class TestFlashcardUI(UITestBase, StaticLiveServerTestCase):
             back="Initial back",
             tags=["python", "django"]
         )
-        flashcard.applications.add(application)
+        flashcard.decks.add(deck)
         
-        # Setup the user session and navigate to the application detail page
+        # Setup the user session and navigate to the deck detail page
         self.setup_user_session(self.page, user)
-        self.page.goto(f"{self.live_server.url}{reverse('main:application_detail', kwargs={'pk': application.pk})}")
+        self.page.goto(f"{self.live_server.url}{reverse('main:deck_detail', kwargs={'pk': deck.pk})}")
         self.wait_for_page_load(self.page)
         
         # Find and click the edit button on the flashcard

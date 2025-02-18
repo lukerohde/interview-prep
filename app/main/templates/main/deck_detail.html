@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}{{ deck.name }} - {{ deck.tutor.deck_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid h-100 p-0" 
+    data-controller="voice-chat flashcard deck" 
+    data-deck-generate-questions-url-template-value="{% url 'main:api-deck-generate-questions' ':id' %}"
+    data-voice-chat-auto-connect-value="true" 
+    data-voice-chat-session-url-value="{% url 'main:api-voice-chat-session' %}" 
+    
+    data-controller="flashcard" 
+    data-flashcard-api-url-value="{% url 'main:api-flashcard-list' %}"
+    data-flashcard-next-review-url-value="{% url 'main:api-flashcard-next-review' %}"
+    data-flashcard-review-url-template-value="{% url 'main:api-flashcard-review' ':id' %}"
+    data-flashcard-delete-url-template-value="{% url 'main:api-flashcard-detail' ':id' %}"
+    data-flashcard-review-side-value="front"
+
+    data-action="voice-chat:prompts-available->flashcard#handlePromptsAvailable 
+                voice-chat:function-call->flashcard#handleFunctionCall 
+                flashcard:add-context->voice-chat#addContext 
+                flashcard:please-respond->voice-chat#pleaseRespond">
+  
+  <div class="row h-100 g-0 px-3 pt-3">
+    <!-- Main Content Area -->
+    <div class="col-md-7 d-flex flex-column">
+      <!-- Review Area -->
+      <div data-flashcard-target="reviewContainer" class="review-area d-none bg-white p-3">
+        <!-- Active flashcard for review will be shown here -->
+      </div>
+
+      <!-- Transcript Area -->
+      <div id="transcript-container" data-controller="transcript" class="transcript-container bg-white rounded border flex-grow-1 mb-3 overflow-auto" data-transcript-target="container">
+        <!-- Voice Button -->
+        <div class="sticky-top" style="z-index: 1020;">
+          <div class="d-flex justify-content-end p-3 gap-2 align-items-center">
+            <div class="voice-status small text-muted d-none" data-voice-chat-target="status">
+                Hold to talk or tap to toggle
+            </div>
+            <button
+              class="voice-button"
+              data-voice-chat-target="walkieButton"
+              data-action="
+                pointerdown->voice-chat#pressStart
+                pointerup->voice-chat#pressEnd
+                keydown@window->voice-chat#spaceDown
+                keyup@window->voice-chat#spaceUp
+              "
+              data-state="disconnected"
+              data-muted="true"
+              title="Hold to talk or tap to toggle mute">
+              <i class="bi bi-telephone-x"></i>
+            </button>
+          </div>
+        </div>
+        <div class="flex-grow-1 overflow-auto p-3">
+          <!-- Transcript content will appear here -->
+        </div>
+      </div>
+      {% include 'main/_transcript_message.html' %}
+    </div>
+
+       <!-- Sidebar -->
+       <div id="sidebar" class="offcanvas-md offcanvas-end col-md-5">
+        <div class="offcanvas-header d-md-none">
+          <div class="h5 mb-0">Menu</div>
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar"></button>
+        </div>
+        <div class="offcanvas-body p-md-3 pt-md-0">
+          <div class="bg-white rounded border h-100 d-flex flex-column overflow-hidden">
+          
+              <div class="nav flex-column d-md-none">
+                  <a class="text-decoration-none text-dark px-3 py-2 {% if request.resolver_match.url_name == 'deck_list' %}fw-bold{% endif %}" 
+                     href="{% url 'main:deck_list' %}">
+                      <i class="bi bi-briefcase me-2"></i>
+                      <!-- need to update to be the deckname from the tutor file -->
+                      <span>Decks</span>
+                  </a>
+                  <a class="text-decoration-none text-dark px-3 py-2"
+                      href="{% url 'account_logout' %}" >
+                      <i class="bi bi-box-arrow-right me-2"></i> 
+                      <span>Logout</span>
+                  </a>
+              </div>
+  
+            <!-- Categories/Decks - Hidden until implemented -->
+            <div class="p-3 d-none">
+              <h5>Categories</h5>
+              <div class="list-group">
+                <!-- Categories will be rendered here -->
+              </div>
+            </div>
+            
+            <div class="d-flex justify-content-between align-items-center p-3">
+              <div class="h5 mb-0">Questions</div>
+              <button class="btn btn-sm btn-outline-primary" 
+                      data-action="flashcard#fetchNextCard">
+                <i class="bi bi-play-fill"></i> Review
+              </button>
+            </div>
+            <div class="flashcard-previews p-3 flex-grow-1 overflow-auto" style="height: 0" data-flashcard-target="previewContainer">
+                {% for flashcard in flashcards %}
+                    {% include 'main/_flashcard_preview.html' with flashcard=flashcard %}
+                {% empty %}
+                    <p class="text-muted">No flashcards available.</p>
+                {% endfor %}
+            </div>
+  
+            <!-- Mic Selection -->
+            <div class="mt-auto p-3 pb-0 border-top">
+              
+              <!-- Mic Selection -->
+              <div class="mic-select-container w-100">
+                <select class="form-select form-select-sm" data-voice-chat-target="micSelect" data-action="change->voice-chat#switchMicrophone">
+                  <option value="">Loading microphones...</option>
+                </select>
+              </div>
+            </div
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  {% include "main/_edit_flashcard_modal.html" %}
+  {% endblock %}

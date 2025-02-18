@@ -1,0 +1,34 @@
+{% extends "main/base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="display-6">Tutors</h1>
+    
+    <div class="row mt-4">
+        {% for tutor in tutors %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ tutor.name }}</h5>
+                    <p class="card-text">{{ tutor.deck_name }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'main:tutor_prompts' tutor.url_path %}" class="btn btn-primary">
+                            Configure Prompts
+                        </a>
+                        <a href="{% url 'main:deck_list' %}?tutor={{ tutor.id }}" class="btn btn-outline-secondary">
+                            View Decks
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                No tutors available. Please contact an administrator to set up tutors.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
