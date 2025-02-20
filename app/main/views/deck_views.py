@@ -91,6 +91,7 @@ def deck_create(request, url_path):
         form = DeckForm()
     return render(request, 'main/deck_form.html', {'form': form, 'tutor': request.tutor})
 
+@login_required
 def deck_edit(request, url_path, pk):
     """Edit an existing deck"""
     deck = get_object_or_404(Deck, pk=pk, owner=request.user, tutor=request.tutor)
@@ -115,6 +116,7 @@ def deck_edit(request, url_path, pk):
     
     return render(request, 'main/deck_form.html', {'form': form, 'deck': deck, 'tutor': request.tutor})
     
+@login_required
 def deck_delete(request, url_path, pk):
     deck = get_object_or_404(Deck, pk=pk, owner=request.user, tutor=request.tutor)
     if request.method == 'POST':

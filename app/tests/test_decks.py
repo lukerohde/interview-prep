@@ -240,7 +240,7 @@ def test_unauthorized_access(client, tutor):
     assert response.status_code == 302  # Redirects to login
     
     # Test detail view requires login
-    response = client.get(reverse('main:deck_detail', kwargs={'pk': deck.pk}))
+    response = client.get(reverse('main:deck_detail', kwargs={'url_path': tutor.url_path, 'pk': deck.pk}))
     assert response.status_code == 302  # Redirects to login
     
     # Test create view requires login

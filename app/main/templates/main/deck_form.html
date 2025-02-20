@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary bg-gradient text-white py-3">
+          <h1 class="card-title h3 mb-0">{% if form.instance.pk %}Edit{% else %}Create{% endif %} Deck</h1>
+        </div>
+        <div class="card-body p-4">
+          <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-4">
+              <label for="{{ form.name.id_for_label }}" class="form-label fw-bold">{{ form.name.label }}</label>
+              <input type="text" name="name" class="form-control form-control-lg" 
+                     id="{{ form.name.id_for_label }}" value="{{ form.name.value|default:'' }}" 
+                     placeholder="Enter a name for your deck">
+              {% if form.name.help_text %}
+                <div class="form-text text-muted">{{ form.name.help_text }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-4">
+              <label for="{{ form.description.id_for_label }}" class="form-label fw-bold">Description</label>
+              <textarea name="description" class="form-control" id="{{ form.description.id_for_label }}" 
+                        rows="3" placeholder="Enter a description for your deck">{{ form.description.value|default:'' }}</textarea>
+              {% if form.description.help_text %}
+                <div class="form-text text-muted">{{ form.description.help_text }}</div>
+              {% endif %}
+            </div>
+
+            <div class="mb-4">
+              <label for="{{ form.content.id_for_label }}" class="form-label fw-bold">Content</label>
+              <textarea name="content" class="form-control" id="{{ form.content.id_for_label }}" 
+                        rows="10" placeholder="Enter the content for your deck (e.g., text to generate flashcards from)">{{ form.content.value|default:'' }}</textarea>
+              {% if form.content.help_text %}
+                <div class="form-text text-muted">{{ form.content.help_text }}</div>
+              {% endif %}
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center">
+              <a href="{% url 'main:deck_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Decks
+              </a>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-save me-2"></i>Save Deck
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
