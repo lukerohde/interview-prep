@@ -71,8 +71,8 @@
         <div class="bg-white rounded border h-100 d-flex flex-column overflow-hidden">
         
             <div class="nav flex-column d-md-none">
-                <a class="text-decoration-none text-dark px-3 py-2 {% if request.resolver_match.url_name == 'application_list' %}fw-bold{% endif %}" 
-                   href="{% url 'main:application_list' %}">
+                <a class="text-decoration-none text-dark px-3 py-2 {% if request.resolver_match.url_name == 'deck_list' %}fw-bold{% endif %}" 
+                   href="{% url 'main:deck_list' %}">
                     <i class="bi bi-briefcase me-2"></i>
                     <span>Applications</span>
                 </a>

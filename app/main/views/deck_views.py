@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .models import Deck, FlashCard
-from .forms import DeckForm
-from .serializers import FlashCardSerializer
+from main.models import Deck, FlashCard, Tutor
+from main.forms import DeckForm
+from main.serializers import FlashCardSerializer
 
 import requests
 from django.views.decorators.http import require_POST
@@ -28,23 +28,17 @@ class DeckViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        queryset = Deck.objects.filter(owner=self.request.user)
-        
-        # Filter by tutor if specified
-        tutor_id = self.request.query_params.get('tutor')
-        if tutor_id:
-            queryset = queryset.filter(tutor_id=tutor_id)
-            
+        queryset = Deck.objects.filter(owner=self.request.user, tutor=self.request.tutor)
         return queryset
     
     @action(detail=True, methods=['post'])
-    def generate_questions(self, request, pk=None):
-        """Generate interview questions for an application."""
-        application = self.get_object()
+    def generate_questions(self, request, pk=None, url_path=None):
+        """Generate interview questions for a deck."""
+        deck = self.get_object()
         message = None
         
         try:
-            cards = application.generate_and_save_questions()
+            cards = deck.generate_and_save_questions()
             message = f'Generated {len(cards)} new questions!'
         except Exception as e:
             logger.error(f'Error generating questions: {str(e)}')
@@ -52,82 +46,81 @@ class DeckViewSet(viewsets.ModelViewSet):
             
         if 'text/html' in request.headers.get('Accept', ''):
             messages.success(request, message) if 'Generated' in message else messages.error(request, message)
-            return redirect('main:application_detail', pk=application.pk)
+            return redirect('main:deck_detail', url_path=url_path, pk=deck.pk)
             
         return Response({'message': message}, status=status.HTTP_200_OK if 'Generated' in message else status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @login_required
-def application_list(request):
-    applications = Application.objects.filter(owner=request.user)
-    if not applications.exists():
-        messages.info(request, "Create your first job application!")
-        return redirect('main:application_create')
-    return render(request, 'main/application_list.html', {'applications': applications})
+def deck_list(request, url_path):
+    decks = Deck.objects.filter(owner=request.user, tutor=request.tutor)
+    if not decks.exists():
+        return redirect('main:deck_create', url_path=url_path)
+    return render(request, 'main/deck_list.html', {'decks': decks, 'tutor': request.tutor})
 
 @login_required
-def application_detail(request, pk):
-    application = get_object_or_404(Application, pk=pk, owner=request.user)
-    flashcards = application.flashcards.all()
-    return render(request, 'main/application_detail.html', {
-        'application': application,
-        'flashcards': flashcards
+def deck_detail(request, url_path, pk):
+    deck = get_object_or_404(Deck, pk=pk, owner=request.user, tutor=request.tutor)
+    flashcards = deck.flashcards.all()
+    return render(request, 'main/deck_detail.html', {
+        'deck': deck,
+        'flashcards': flashcards,
+        'tutor': request.tutor
     })
 
 @login_required
-def application_create(request):
+def deck_create(request, url_path):
     if request.method == 'POST':
-        form = ApplicationForm(request.POST)
+        form = DeckForm(request.POST)
         if form.is_valid():
             with transaction.atomic():
-                application = form.save(commit=False)
-                application.owner = request.user
-                application.save()
+                deck = form.save(commit=False)
+                deck.owner = request.user
+                deck.tutor = request.tutor
+                deck.save()
                 
                 # Generate interview questions
                 try:
-                    created_cards = application.generate_and_save_questions()
-                    messages.success(request, f"Application created successfully with {len(created_cards)} interview questions!")
+                    created_cards = deck.generate_and_save_questions()
+                    messages.success(request, f"Deck created successfully with {len(created_cards)} interview questions!")
                 except Exception as e:
                     logger.error(f"Error generating questions: {str(e)}")
-                    messages.warning(request, "Application created, but there was an error generating interview questions.")
+                    messages.warning(request, "Deck created, but there was an error generating interview questions.")
                 
-            return redirect('main:application_detail', pk=application.pk)
+            return redirect('main:deck_detail', url_path=request.tutor.url_path, pk=deck.pk)
     else:
-        form = ApplicationForm()
-    return render(request, 'main/application_form.html', {'form': form})
+        form = DeckForm()
+    return render(request, 'main/deck_form.html', {'form': form, 'tutor': request.tutor})
 
-@login_required
-def application_edit(request, pk):
-    """Edit an existing application"""
-    application = get_object_or_404(Application, pk=pk, owner=request.user)
+def deck_edit(request, url_path, pk):
+    """Edit an existing deck"""
+    deck = get_object_or_404(Deck, pk=pk, owner=request.user, tutor=request.tutor)
     
     if request.method == 'POST':
-        form = ApplicationForm(request.POST, instance=application)
+        form = DeckForm(request.POST, instance=deck)
         if form.is_valid():
             with transaction.atomic():
-                application = form.save()
+                deck = form.save()
                 
                 # Generate new questions
                 try:
-                    created_cards = application.generate_and_save_questions()
-                    messages.success(request, f"Application updated with {len(created_cards)} new interview questions!")
+                    created_cards = deck.generate_and_save_questions()
+                    messages.success(request, f"Deck updated with {len(created_cards)} new interview questions!")
                 except Exception as e:
                     logger.error(f"Error generating questions: {str(e)}")
-                    messages.warning(request, "Application updated, but there was an error generating new interview questions.")
+                    messages.warning(request, "Deck updated, but there was an error generating new interview questions.")
                 
-            return redirect('main:application_detail', pk=application.pk)
+            return redirect('main:deck_detail', url_path=url_path, pk=deck.pk)
     else:
-        form = ApplicationForm(instance=application)
+        form = DeckForm(instance=deck)
     
-    return render(request, 'main/application_form.html', {'form': form, 'application': application})
-
-@login_required
-def application_delete(request, pk):
-    application = get_object_or_404(Application, pk=pk, owner=request.user)
+    return render(request, 'main/deck_form.html', {'form': form, 'deck': deck, 'tutor': request.tutor})
+    
+def deck_delete(request, url_path, pk):
+    deck = get_object_or_404(Deck, pk=pk, owner=request.user, tutor=request.tutor)
     if request.method == 'POST':
-        application.delete()
-        messages.success(request, "Application deleted successfully!")
-        return redirect('main:application_list')
-    return render(request, 'main/application_confirm_delete.html', {'application': application})
+        deck.delete()
+        messages.success(request, "Deck deleted successfully!")
+        return redirect('main:deck_list', url_path=url_path)
+    return render(request, 'main/deck_confirm_delete.html', {'deck': deck, 'tutor': request.tutor})
 
 

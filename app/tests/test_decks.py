@@ -2,7 +2,7 @@ import pytest
 from django.urls import reverse
 from django.test import Client
 from unittest.mock import patch
-from .factories import UserFactory, DeckFactory
+from .factories import UserFactory, DeckFactory, TutorFactory
 from main.models import Deck, User, FlashCard
 import json
 
@@ -23,25 +23,45 @@ def user():
     return UserFactory()
 
 @pytest.fixture
+def tutor():
+    return TutorFactory()
+
+@pytest.fixture
 def authenticated_client(client, user):
     client.force_login(user)
     return client
-def test_deck_list_view(authenticated_client, user):
-    deck = DeckFactory(owner=user)
+def test_tutor_list_view(authenticated_client, user, tutor):
+    # Test home page with single tutor
+    response = authenticated_client.get(reverse('main:home'))
+    assert response.status_code == 302
+    assert response.url == reverse('main:deck_list', kwargs={'url_path': tutor.url_path})
     
-    # Test home page (which shows deck list)
+    # Create another tutor
+    other_tutor = TutorFactory()
+    
+    # Test home page with multiple tutors
     response = authenticated_client.get(reverse('main:home'))
     assert response.status_code == 200
-    assert deck.name in str(response.content)
+    assert tutor.name in str(response.content)
+    assert other_tutor.name in str(response.content)
+
+def test_deck_list_view(authenticated_client, user, tutor):
+    # Test empty deck list redirects to create
+    response = authenticated_client.get(reverse('main:deck_list', kwargs={'url_path': tutor.url_path}))
     
-    # Test explicit deck list page
-    response = authenticated_client.get(reverse('main:deck_list'))
+    assert response.status_code == 302
+    assert response.url == reverse('main:deck_create', kwargs={'url_path': tutor.url_path})
+    # Create a deck
+    deck = DeckFactory(owner=user, tutor=tutor)
+    
+    # Test deck list with deck
+    response = authenticated_client.get(reverse('main:deck_list', kwargs={'url_path': tutor.url_path}))
     assert response.status_code == 200
     assert deck.name in str(response.content)
     
     # Test that users can only see their own decks
     other_user = UserFactory()
-    other_deck = DeckFactory(owner=other_user)
+    other_deck = DeckFactory(owner=other_user, tutor=tutor)
     assert other_deck.name not in str(response.content)
 
 @pytest.fixture
@@ -59,22 +79,23 @@ def mock_openai_response():
         }
     ]
 
-def test_deck_create_view_with_questions(authenticated_client, user, mock_openai_response):
+def test_deck_create_view_with_questions(authenticated_client, user, tutor, mock_openai_response):
     data = {
         'name': 'Software Engineer at Google',
         'status': 'draft',
-        'resume': 'My resume content',
-        'job_description': 'Job description content'
+        'deck_type': Deck.DeckType.JOB_APPLICATION
     }
     
     # Mock the OpenAI call
     with patch('main.ai_helpers.call_openai', return_value=json.dumps(mock_openai_response)):
-        before_count = Deck.objects.count()  response = authenticated_client.post(reverse('main:deck_create'), data)
+        before_count = Deck.objects.count()  
+        response = authenticated_client.post(reverse('main:deck_create', kwargs={'url_path': tutor.url_path}), data)
         
         # Check deck was created
         assert Deck.objects.count() == before_count + 1
         deck = Deck.objects.first()
         assert deck.owner == user
+        assert deck.tutor == tutor
         assert deck.name == data['name']
         
         # Check flashcards were created
@@ -94,37 +115,38 @@ def test_deck_create_view_with_questions(authenticated_client, user, mock_openai
             assert 'auto-generated' in card.tags
         
         assert response.status_code == 302
-        assert response.url == reverse('main:deck_detail', kwargs={'pk': deck.pk})
+        assert response.url == reverse('main:deck_detail', kwargs={'url_path': tutor.url_path, 'pk': deck.pk})
 
-def test_deck_create_view_openai_error(authenticated_client, user):
+def test_deck_create_view_openai_error(authenticated_client, user, tutor):
     data = {
         'name': 'Software Engineer at Google',
         'status': 'draft',
-        'resume': 'My resume content',
-        'job_description': 'Job description content'
+        'deck_type': Deck.DeckType.JOB_APPLICATION
     }
     
     # Mock OpenAI call to raise an exception
     with patch('main.models.generate_interview_questions') as mock_generate:
         mock_generate.side_effect = Exception("OpenAI API error")
         
-        before_count = Deck.objects.count()  response = authenticated_client.post(reverse('main:deck_create'), data)
+        before_count = Deck.objects.count()  
+        response = authenticated_client.post(reverse('main:deck_create', kwargs={'url_path': tutor.url_path}), data)
         
         # Check deck was still created despite the error
         assert Deck.objects.count() == before_count + 1
         deck = Deck.objects.first()
         assert deck.owner == user
+        assert deck.tutor == tutor
         assert deck.name == data['name']
         
         # Check no flashcards were created
         assert deck.flashcards.count() == 0
         
         assert response.status_code == 302
-        assert response.url == reverse('main:deck_detail', kwargs={'pk': deck.pk})
+        assert response.url == reverse('main:deck_detail', kwargs={'url_path': tutor.url_path, 'pk': deck.pk})
 
-def test_deck_edit_view_with_questions(authenticated_client, user, mock_openai_response):
+def test_deck_edit_view_with_questions(authenticated_client, user, tutor, mock_openai_response):
     # Create deck with existing flashcards
-    deck = DeckFactory(owner=user)
+    deck = DeckFactory(owner=user, tutor=tutor)
     existing_flashcard = FlashCard.objects.create(
         user=user,
         front="Existing question",
@@ -136,14 +158,13 @@ def test_deck_edit_view_with_questions(authenticated_client, user, mock_openai_r
     data = {
         'name': 'Updated Job Title',
         'status': 'submitted',
-        'resume': 'Updated resume',
-        'job_description': 'Updated job description'
+        'deck_type': Deck.DeckType.STUDY,  # Using model's enum
     }
     
     # Mock OpenAI call
     with patch('main.ai_helpers.call_openai', return_value=json.dumps(mock_openai_response)):
         response = authenticated_client.post(
-            reverse('main:deck_edit', kwargs={'pk': deck.pk}),
+            reverse('main:deck_edit', kwargs={'url_path': tutor.url_path, 'pk': deck.pk}),
             data
         )
         
@@ -162,8 +183,8 @@ def test_deck_edit_view_with_questions(authenticated_client, user, mock_openai_r
         assert mock_openai_response[0]['question'] in new_questions
         assert mock_openai_response[1]['question'] in new_questions
 
-def test_deck_edit_view_openai_error(authenticated_client, user):
-    deck = DeckFactory(owner=user)
+def test_deck_edit_view_openai_error(authenticated_client, user, tutor):
+    deck = DeckFactory(owner=user, tutor=tutor)
     existing_flashcard = FlashCard.objects.create(
         user=user,
         front="Existing question",
@@ -182,7 +203,7 @@ def test_deck_edit_view_openai_error(authenticated_client, user):
     # Mock OpenAI call to raise an exception
     with patch('main.ai_helpers.call_openai', side_effect=Exception("OpenAI API error")):
         response = authenticated_client.post(
-            reverse('main:deck_edit', kwargs={'pk': deck.pk}),
+            reverse('main:deck_edit', kwargs={'url_path': tutor.url_path, 'pk': deck.pk}),
             data
         )
         
@@ -194,28 +215,28 @@ def test_deck_edit_view_openai_error(authenticated_client, user):
         assert flashcards.count() == 1
         assert flashcards.first().front == "Existing question"
 
-def test_deck_delete_view(authenticated_client, user):
-    deck = DeckFactory(owner=user)
+def test_deck_delete_view(authenticated_client, user, tutor):
+    deck = DeckFactory(owner=user, tutor=tutor)
     
     before_count = Deck.objects.count()
-    response = authenticated_client.post(reverse('main:deck_delete', kwargs={'pk': deck.pk}))
+    response = authenticated_client.post(reverse('main:deck_delete', kwargs={'url_path': tutor.url_path, 'pk': deck.pk}))
     assert Deck.objects.count() == before_count - 1
     assert response.status_code == 302
-    assert response.url == reverse('main:deck_list')
+    assert response.url == reverse('main:deck_list', kwargs={'url_path': tutor.url_path})
 
-def test_deck_detail_view(authenticated_client, user):
-    deck = DeckFactory(owner=user)
+def test_deck_detail_view(authenticated_client, user, tutor):
+    deck = DeckFactory(owner=user, tutor=tutor)
     
-    response = authenticated_client.get(reverse('main:deck_detail', kwargs={'pk': deck.pk}))
+    response = authenticated_client.get(reverse('main:deck_detail', kwargs={'url_path': tutor.url_path, 'pk': deck.pk}))
     assert response.status_code == 200
     assert deck.title in str(response.content)
     
-def test_unauthorized_access(client):
+def test_unauthorized_access(client, tutor):
     user = UserFactory()
-    deck = DeckFactory(owner=user)
+    deck = DeckFactory(owner=user, tutor=tutor)
     
     # Test list view requires login
-    response = client.get(reverse('main:deck_list'))
+    response = client.get(reverse('main:deck_list', kwargs={'url_path': tutor.url_path}))
     assert response.status_code == 302  # Redirects to login
     
     # Test detail view requires login
@@ -223,28 +244,28 @@ def test_unauthorized_access(client):
     assert response.status_code == 302  # Redirects to login
     
     # Test create view requires login
-    response = client.get(reverse('main:deck_create'))
+    response = client.get(reverse('main:deck_create', kwargs={'url_path': tutor.url_path}))
     assert response.status_code == 302  # Redirects to login
     
     # Test edit view requires login
-    response = client.get(reverse('main:deck_edit', kwargs={'pk': deck.pk}))
+    response = client.get(reverse('main:deck_edit', kwargs={'url_path': tutor.url_path, 'pk': deck.pk}))
     assert response.status_code == 302  # Redirects to login
     
     # Test delete view requires login
-    response = client.get(reverse('main:deck_delete', kwargs={'pk': deck.pk}))
+    response = client.get(reverse('main:deck_delete', kwargs={'url_path': tutor.url_path, 'pk': deck.pk}))
     assert response.status_code == 302  # Redirects to login
 
-def test_other_user_access(authenticated_client, user):
+def test_other_user_access(authenticated_client, user, tutor):
     other_user = UserFactory()
-    other_deck = DeckFactory(owner=other_user)
+    other_deck = DeckFactory(owner=other_user, tutor=tutor)
     
     # Test cannot access other user's deck detail
-    response = authenticated_client.get(reverse('main:deck_detail', kwargs={'pk': other_deck.pk}))
+    response = authenticated_client.get(reverse('main:deck_detail', kwargs={'url_path': tutor.url_path, 'pk': other_deck.pk}))
     assert response.status_code == 404
     
     # Test cannot edit other user's deck
     response = authenticated_client.post(
-        reverse('main:deck_edit', kwargs={'pk': other_deck.pk}),
+        reverse('main:deck_edit', kwargs={'url_path': tutor.url_path, 'pk': other_deck.pk}),
         {'name': 'Hacked', 'status': 'draft', 'resume': 'hacked', 'job_description': 'hacked'}
     )
     assert response.status_code == 404
@@ -252,22 +273,22 @@ def test_other_user_access(authenticated_client, user):
     assert other_deck.name != 'Hacked'
     
     # Test cannot delete other user's deck
-    response = authenticated_client.post(reverse('main:deck_delete', kwargs={'pk': other_deck.pk}))
+    response = authenticated_client.post(reverse('main:deck_delete', kwargs={'url_path': tutor.url_path, 'pk': other_deck.pk}))
     assert response.status_code == 404
     assert Deck.objects.filter(pk=other_deck.pk).exists()
     
     # Test cannot generate questions for other user's deck
-    response = authenticated_client.post(reverse('main:api-deck-generate-questions', kwargs={'pk': other_deck.pk}))
+    response = authenticated_client.post(reverse('main:api-deck-generate-questions', kwargs={'url_path': tutor.url_path, 'pk': other_deck.pk}))
     assert response.status_code == 404
 
 @pytest.mark.django_db
-def test_generate_questions_model_method(user, mock_openai_response):
+def test_generate_questions_model_method(user, tutor, mock_openai_response):
     """Test the generate_and_save_questions method on Deck model"""
-    deck = DeckFactory(owner=user)
+    deck = DeckFactory(owner=user, tutor=tutor)
     
     with patch('main.ai_helpers.call_openai', return_value=json.dumps(mock_openai_response)):
         # Test generating questions
-        created_cards = application.generate_and_save_questions()
+        created_cards = deck.generate_and_save_questions()
         
         # Verify cards were created
         assert len(created_cards) == 2
@@ -276,7 +297,7 @@ def test_generate_questions_model_method(user, mock_openai_response):
         for card in created_cards:
             assert card.user == user
             assert 'auto-generated' in card.tags
-            assert card.applications.filter(pk=application.pk).exists()
+            assert card.decks.filter(pk=deck.pk).exists()
             
             # Verify question content matches mock data
             matching_q = next(q for q in mock_openai_response if q['question'] == card.front)
@@ -284,14 +305,14 @@ def test_generate_questions_model_method(user, mock_openai_response):
             assert matching_q['category'] in card.tags
 
 @pytest.mark.django_db
-def test_generate_questions_endpoint(authenticated_client, user, mock_openai_response):
+def test_generate_questions_endpoint(authenticated_client, user, tutor, mock_openai_response):
     """Test the generate questions endpoint"""
-    deck = DeckFactory(owner=user)
+    deck = DeckFactory(owner=user, tutor=tutor)
     
     with patch('main.ai_helpers.call_openai', return_value=json.dumps(mock_openai_response)):
         # Make request to generate questions
         response = authenticated_client.post(
-            reverse('main:api-application-generate-questions', kwargs={'pk': application.pk})
+            reverse('main:api-deck-generate-questions', kwargs={'url_path': tutor.url_path, 'pk': deck.pk})
         )
         
         # Verify successful response
@@ -308,14 +329,14 @@ def test_generate_questions_endpoint(authenticated_client, user, mock_openai_res
         assert flashcard_questions == expected_questions
 
 @pytest.mark.django_db
-def test_generate_questions_error_handling(authenticated_client, user):
+def test_generate_questions_error_handling(authenticated_client, user, tutor):
     """Test error handling in generate questions endpoint"""
-    deck = DeckFactory(owner=user)
+    deck = DeckFactory(owner=user, tutor=tutor)
     
     with patch('main.ai_helpers.call_openai', side_effect=Exception('API Error')):
         # Make request to generate questions
         response = authenticated_client.post(
-            reverse('main:api-application-generate-questions', kwargs={'pk': application.pk})
+            reverse('main:api-deck-generate-questions', kwargs={'url_path': tutor.url_path, 'pk': deck.pk})
         )
         
         # Verify error response
@@ -323,4 +344,4 @@ def test_generate_questions_error_handling(authenticated_client, user):
         assert response.json()['message'] == 'Failed to generate questions'
         
         # Verify no cards were created
-        assert application.flashcards.count() == 0
+        assert deck.flashcards.count() == 0

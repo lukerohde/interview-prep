@@ -7,7 +7,7 @@
       <h1 class="display-6 mb-0">{{ tutor.deck_name }}</h1>
     </div>
     <div class="col-auto">
-      <a href="{% url 'main:deck_create' %}" class="btn btn-primary btn-lg">
+      <a href="{% url 'main:deck_create' url_path=tutor.url_path %}" class="btn btn-primary btn-lg">
         <i class="bi bi-plus-circle me-2"></i>New Deck
       </a>
     </div>

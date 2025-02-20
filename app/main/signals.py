@@ -9,13 +9,15 @@ from .models import Deck
 
 @receiver(post_save, sender=User)
 def create_user_deck(sender, instance, created, **kwargs):
-    if created:
-        Deck.objects.create(
-            name=f"Welcome {instance.username}! Create your first deck",
-            deck_type=Deck.DeckType.JOB_APPLICATION,
-            status='draft',
-            owner=instance
-        )
+    pass
+    # if created:
+    #     Deck.objects.create(
+    #         name=f"Welcome {instance.username}! Create your first deck",
+    #         deck_type=Deck.DeckType.JOB_APPLICATION,
+    #         status='draft',
+    #         owner=instance
+    #         tutor= 
+    #     )
         
 @receiver(user_logged_in, sender=User)
 def something_useful_on_login(sender, request, user, **kwargs):

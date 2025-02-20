@@ -1,7 +1,7 @@
 # tests/factories.py
 import factory
 from django.contrib.auth.models import User
-from main.models import Deck, FlashCard
+from main.models import Deck, FlashCard, Tutor
 from django.utils import timezone
 
 class UserFactory(factory.django.DjangoModelFactory):
@@ -21,14 +21,25 @@ class UserFactory(factory.django.DjangoModelFactory):
         if create:
             obj.save()
 
+class TutorFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Tutor
+        django_get_or_create = ('url_path',)
+    
+    name = factory.Sequence(lambda n: f"Test Tutor {n}")
+    deck_name = factory.Sequence(lambda n: f"Test Tutor Deck {n}")
+    url_path = factory.Sequence(lambda n: f"test-tutor-{n}")
+    config_path = factory.Sequence(lambda n: f"tutors/test_tutor_{n}.yaml")
+
 class DeckFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = Deck
     
     owner = factory.SubFactory(UserFactory)
+    tutor = factory.SubFactory(TutorFactory)
     name = factory.Sequence(lambda n: f"Study Deck {n}")
     status = 'active'
-    deck_type = 'study'
+    deck_type = Deck.DeckType.STUDY
 
 class FlashcardFactory(factory.django.DjangoModelFactory):
     class Meta:

@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 
 class VoiceChatViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
-    lookup_field = 'url_path'  # Use tutor's url_path for lookup
+    lookup_field = 'tutor_path'  # Use tutor's url_path for lookup
     
     @action(detail=True, methods=['get'])
-    def session(self, request, url_path=None):
+    def session(self, request, tutor_path=None):
         """Get voice chat session for a specific tutor"""
-        logger.debug(f'Session request received for tutor: {url_path}')
+        logger.debug(f'Session request received for tutor: {tutor_path}')
         
         api_key = settings.OPENAI_API_KEY
         if not api_key:
@@ -28,7 +28,7 @@ class VoiceChatViewSet(viewsets.ViewSet):
 
         try:
             # Get tutor by url_path
-            tutor = get_object_or_404(Tutor, url_path=url_path)
+            tutor = get_object_or_404(Tutor, url_path=tutor_path)
             config = tutor.get_config(request.user)
             
             headers = {
@@ -38,8 +38,8 @@ class VoiceChatViewSet(viewsets.ViewSet):
             
             url = 'https://api.openai.com/v1/realtime/sessions'
                 
-                # Set the overridden value
-                target[final_key] = value
+            # Set the overridden value
+            target[final_key] = value
 
             # Prepare session data from YAML config
             data = config['session']

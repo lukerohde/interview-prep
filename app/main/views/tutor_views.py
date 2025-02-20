@@ -1,4 +1,4 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -7,6 +7,9 @@ from ..models import Tutor, TutorPromptOverride
 @login_required
 def tutor_list(request):
     tutors = Tutor.objects.all()
+    if tutors.count() == 1:
+        # Single tutor - redirect to their deck list
+        return redirect('main:deck_list', url_path=tutors.first().url_path)
     return render(request, 'main/tutor_list.html', {'tutors': tutors})
 
 @login_required

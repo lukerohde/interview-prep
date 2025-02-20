@@ -7,8 +7,8 @@ from django.db.models import Q, F
 from django.utils import timezone
 from django.db import models
 from random import choice
-from .models import FlashCard, ReviewStatus
-from .serializers import FlashCardSerializer
+from main.models import FlashCard, ReviewStatus
+from main.serializers import FlashCardSerializer
 
 class FlashCardViewSet(viewsets.GenericViewSet,
                      viewsets.mixins.ListModelMixin,

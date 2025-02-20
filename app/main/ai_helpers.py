@@ -35,7 +35,7 @@ def call_openai(system_prompt: str, user_prompt: str) -> str:
     )
     return response.choices[0].message.content
 
-def generate_interview_questions(job_description: str, resume: str, existing_questions: List[Dict] = None) -> List[Dict]:
+def generate_interview_questions(content: str, existing_questions: List[Dict] = None) -> List[Dict]:
     """
     Generate interview questions based on the job description and resume.
     
@@ -72,12 +72,8 @@ def generate_interview_questions(job_description: str, resume: str, existing_que
         json.dumps([q['question'] for q in (existing_questions or [])]) if existing_questions else ""
     
     user_prompt = f"""
-    Job Description:
-    {job_description}
-    
-    Resume:
-    {resume}
-    {existing_questions_text}
+    Resume, position description and/or technical content:
+    {content}
     
     As a professional interviewer, generate a set of unique interview questions based on this information.
     """

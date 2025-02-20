@@ -1,4 +1,4 @@
-{% extends "main/base.html" %}
+{% extends "base.html" %}
 
 {% block content %}
 <div class="container mt-4">
@@ -15,7 +15,7 @@
                         <a href="{% url 'main:tutor_prompts' tutor.url_path %}" class="btn btn-primary">
                             Configure Prompts
                         </a>
-                        <a href="{% url 'main:deck_list' %}?tutor={{ tutor.id }}" class="btn btn-outline-secondary">
+                        <a href="{% url 'main:deck_list' url_path=tutor.url_path %}" class="btn btn-outline-secondary">
                             View Decks
                         </a>
                     </div>

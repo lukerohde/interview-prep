@@ -4,7 +4,7 @@
   <div class="row align-items-center">
     <div class="col-md-6">
       <h5 class="mb-1">
-        <a href="{% url 'main:deck_detail' deck.pk %}" class="text-decoration-none link-primary">
+        <a href="{% url 'main:deck_detail' url_path=tutor.url_path pk=deck.pk %}" class="text-decoration-none link-primary">
           {{ deck.name }}
         </a>
       </h5>
@@ -32,12 +32,12 @@
     </div>
     <div class="col-md-6 d-flex justify-content-md-end mt-3 mt-md-0">
       <div class="btn-group">
-        <a href="{% url 'main:deck_edit' deck.pk %}" 
+        <a href="{% url 'main:deck_edit' url_path=tutor.url_path pk=deck.pk %}" 
            class="btn btn-outline-primary" title="Edit Deck">
           <i class="bi bi-pencil-square me-md-2"></i>
           <span class="d-none d-md-inline">Edit</span>
         </a>
-        <form action="{% url 'main:deck_delete' deck.pk %}" 
+        <form action="{% url 'main:deck_delete' url_path=tutor.url_path pk=deck.pk %}" 
               method="post" class="d-inline">
           {% csrf_token %}
           <button type="submit" class="btn btn-outline-danger" 
