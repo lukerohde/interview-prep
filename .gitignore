@@ -45,3 +45,6 @@ app/playwright-report
 
 # Pulumi
 .pulumi
+
+# Editor
+.vscode

@@ -26,6 +26,28 @@ def authenticated_client(client, user):
     client.force_login(user)
     return client
 
+def test_flashcard_create(authenticated_client, user):
+    # Prepare create data
+    create_data = {
+        'front': 'Question',
+        'back': 'Answer',
+        'tags': ['test']
+    }
+    
+    expected_flashcard_count = FlashCard.objects.count() + 1
+    # Make the create request
+    url = '/api/flashcards/'
+    response = authenticated_client.post(
+        url,
+        data=json.dumps(create_data),
+        content_type='application/json'
+    )
+    
+    # Check response
+    assert response.status_code == 201
+    assert expected_flashcard_count == FlashCard.objects.count()
+    assert 'flashcard-preview' in response.json()['html']
+
 def test_flashcard_update(authenticated_client, user):
     # Create a flashcard
     flashcard = FlashcardFactory(user=user)
