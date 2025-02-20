@@ -143,18 +143,20 @@ class Deck(models.Model):
             for card in self.flashcards.filter(tags__contains=['auto-generated'])
         ]
 
-    def generate_and_save_questions(self):
-        """Generate and save new AI interview questions from documents"""
+    def generate_questions(self):
+        """Generate new AI interview questions without saving them"""
         existing_questions = self.get_existing_questions()
         
         # Combine all document content
         combined_content = "\n\n".join([doc.content for doc in self.documents.all()])
         
-        questions = generate_interview_questions(
+        return generate_interview_questions(
             content=combined_content,
             existing_questions=existing_questions
         )
 
+    def save_questions(self, questions):
+        """Save the generated questions as flashcards"""
         created_cards = []
         for q in questions:
             flashcard = FlashCard.objects.create(
@@ -165,8 +167,12 @@ class Deck(models.Model):
             )
             flashcard.decks.add(self)
             created_cards.append(flashcard)
-
         return created_cards
+
+    def generate_and_save_questions(self):
+        """Generate and save new AI interview questions from documents"""
+        questions = self.generate_questions()
+        return self.save_questions(questions)
 
 
 

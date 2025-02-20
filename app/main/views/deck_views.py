@@ -97,20 +97,32 @@ def deck_edit(request, url_path, pk):
     deck = get_object_or_404(Deck, pk=pk, owner=request.user, tutor=request.tutor)
     
     if request.method == 'POST':
+                
         form = DeckForm(request.POST, instance=deck)
         if form.is_valid():
-            with transaction.atomic():
-                deck = form.save()
+            try:
+                # Try to generate questions first before saving anything
+                temp_deck = form.save(commit=False)
+                questions = temp_deck.generate_questions()
                 
-                # Generate new questions
-                try:
-                    created_cards = deck.generate_and_save_questions()
-                    messages.success(request, f"Deck updated with {len(created_cards)} new interview questions!")
-                except Exception as e:
-                    logger.error(f"Error generating questions: {str(e)}")
-                    messages.warning(request, "Deck updated, but there was an error generating new interview questions.")
+                # If we get here, AI succeeded, now save everything in a transaction
+                with transaction.atomic():
+                    deck = form.save()
+                    deck.save_questions(questions)
+                    messages.success(request, f"Deck updated with {len(questions)} new interview questions!")
+                return redirect('main:deck_detail', url_path=url_path, pk=deck.pk)
                 
-            return redirect('main:deck_detail', url_path=url_path, pk=deck.pk)
+            except Exception as e:
+                error_msg = f"Error generating questions: {str(e)}"
+                logger.error(error_msg)
+                messages.error(request, "Failed to generate interview questions. Please try again.")
+                return render(request, 'main/deck_form.html', {
+                    'form': form,  # Contains the user's POST data
+                    'deck': deck,
+                    'tutor': request.tutor,
+                    'is_retry': True,
+                    'error_message': error_msg
+                })
     else:
         form = DeckForm(instance=deck)
     

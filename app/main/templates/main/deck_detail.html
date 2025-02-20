@@ -5,9 +5,9 @@
 {% block content %}
 <div class="container-fluid h-100 p-0" 
     data-controller="voice-chat flashcard deck" 
-    data-deck-generate-questions-url-template-value="{% url 'main:api-deck-generate-questions' ':id' %}"
+    data-deck-generate-questions-url-template-value="{% url 'main:api-deck-generate-questions' url_path=tutor.url_path pk=deck.pk %}"
     data-voice-chat-auto-connect-value="true" 
-    data-voice-chat-session-url-value="{% url 'main:api-voice-chat-session' %}" 
+    data-voice-chat-session-url-value="{% url 'main:api-voice-chat-session' tutor_path=tutor.url_path %}" 
     
     data-controller="flashcard" 
     data-flashcard-api-url-value="{% url 'main:api-flashcard-list' %}"
@@ -71,7 +71,7 @@
           
               <div class="nav flex-column d-md-none">
                   <a class="text-decoration-none text-dark px-3 py-2 {% if request.resolver_match.url_name == 'deck_list' %}fw-bold{% endif %}" 
-                     href="{% url 'main:deck_list' %}">
+                     href="{% url 'main:deck_list' url_path=tutor.url_path %}">
                       <i class="bi bi-briefcase me-2"></i>
                       <!-- need to update to be the deckname from the tutor file -->
                       <span>Decks</span>

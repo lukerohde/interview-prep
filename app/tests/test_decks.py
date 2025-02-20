@@ -1,8 +1,10 @@
 import pytest
 from django.urls import reverse
 from django.test import Client
+from django.contrib.messages import get_messages
 from unittest.mock import patch
 from .factories import UserFactory, DeckFactory, TutorFactory
+from .test_base import BaseTestCase
 from main.models import Deck, User, FlashCard
 import json
 
@@ -183,37 +185,67 @@ def test_deck_edit_view_with_questions(authenticated_client, user, tutor, mock_o
         assert mock_openai_response[0]['question'] in new_questions
         assert mock_openai_response[1]['question'] in new_questions
 
-def test_deck_edit_view_openai_error(authenticated_client, user, tutor):
-    deck = DeckFactory(owner=user, tutor=tutor)
-    existing_flashcard = FlashCard.objects.create(
-        user=user,
-        front="Existing question",
-        back="Existing answer",
-        tags=["HR", "auto-generated"]
-    )
-    existing_flashcard.decks.add(deck)
-    
-    data = {
-        'name': 'Updated Job Title',
-        'status': 'submitted',
-        'resume': 'Updated resume',
-        'job_description': 'Updated job description'
-    }
-    
-    # Mock OpenAI call to raise an exception
-    with patch('main.ai_helpers.call_openai', side_effect=Exception("OpenAI API error")):
-        response = authenticated_client.post(
-            reverse('main:deck_edit', kwargs={'url_path': tutor.url_path, 'pk': deck.pk}),
-            data
+class TestDeckViews(BaseTestCase):
+    def test_deck_edit_view_openai_error(self):
+        user = self.create_and_login_user()
+        tutor = TutorFactory()
+        deck = DeckFactory(owner=user, tutor=tutor)
+        existing_flashcard = FlashCard.objects.create(
+            user=user,
+            front="Existing question",
+            back="Existing answer",
+            tags=["HR", "auto-generated"]
         )
+        existing_flashcard.decks.add(deck)
         
-        deck.refresh_from_db()
-        assert deck.name == data['name']
+        data = {
+            'name': 'Updated Job Title',
+            'status': 'submitted',
+            'deck_type': Deck.DeckType.STUDY  # Using model's enum
+        }
         
-        # Check existing flashcard remains unchanged
-        flashcards = deck.flashcards.all()
-        assert flashcards.count() == 1
-        assert flashcards.first().front == "Existing question"
+        original_name = deck.name
+        error_message = "OpenAI API error"
+        
+        # Mock OpenAI call to raise an exception
+        with patch('main.ai_helpers.call_openai', side_effect=Exception(error_message)):
+            response = self.client.post(
+                reverse('main:deck_edit', kwargs={'url_path': tutor.url_path, 'pk': deck.pk}),
+                data
+            )
+            
+            # Check that we're re-rendering the form
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('main/deck_form.html', [t.name for t in response.templates])
+            
+            # Check that error message is in the response
+            messages = self.get_messages_list(response)
+            
+            self.assertEqual(len(messages), 1)
+            message = messages[0]
+            self.assertEqual(message.tags, 'error')
+            self.assertIn('Failed to generate interview questions', str(message))
+            
+            # Check that form contains the submitted data
+            self.assertIn(data['name'], str(response.content))
+            
+            # Check that we have the retry flag
+            self.assertTrue(response.context['is_retry'])
+            
+            # Check that error message is in the context
+            self.assertEqual(
+                response.context['error_message'],
+                f"Error generating questions: {error_message}"
+            )
+            
+            # Check that deck was not updated
+            deck.refresh_from_db()
+            self.assertEqual(deck.name, original_name)
+            
+            # Check existing flashcard remains unchanged
+            flashcards = deck.flashcards.all()
+            self.assertEqual(flashcards.count(), 1)
+            self.assertEqual(flashcards.first().front, "Existing question")
 
 def test_deck_delete_view(authenticated_client, user, tutor):
     deck = DeckFactory(owner=user, tutor=tutor)
@@ -229,7 +261,8 @@ def test_deck_detail_view(authenticated_client, user, tutor):
     
     response = authenticated_client.get(reverse('main:deck_detail', kwargs={'url_path': tutor.url_path, 'pk': deck.pk}))
     assert response.status_code == 200
-    assert deck.title in str(response.content)
+    assert response.context['tutor'] == tutor
+    assert response.context['deck'] == deck
     
 def test_unauthorized_access(client, tutor):
     user = UserFactory()
