@@ -8,7 +8,7 @@
     data-deck-generate-questions-url-template-value="{% url 'main:api-deck-generate-questions' url_path=tutor.url_path pk=deck.pk %}"
     data-voice-chat-auto-connect-value="true" 
     data-voice-chat-session-url-value="{% url 'main:api-voice-chat-session' tutor_path=tutor.url_path %}" 
-    
+    data-flashcard-csrf-token-value="{{ csrf_token }}"
     data-controller="flashcard" 
     data-flashcard-api-url-value="{% url 'main:api-flashcard-list' %}"
     data-flashcard-next-review-url-value="{% url 'main:api-flashcard-next-review' %}"
