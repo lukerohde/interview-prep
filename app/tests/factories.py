@@ -27,7 +27,7 @@ class TutorFactory(factory.django.DjangoModelFactory):
         django_get_or_create = ('url_path',)
     
     name = factory.Sequence(lambda n: f"Test Tutor {n}")
-    deck_name = factory.Sequence(lambda n: f"Test Tutor Deck {n}")
+    deck_name = factory.Sequence(lambda n: f"Test Tutor Decks")
     url_path = factory.Sequence(lambda n: f"test-tutor-{n}")
     config_path = factory.Sequence(lambda n: f"tutors/test_tutor_{n}.yaml")
 

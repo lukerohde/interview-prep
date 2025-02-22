@@ -31,7 +31,7 @@ class TestFlashcardUI(UITestBase, StaticLiveServerTestCase):
         
         # Setup the user session and navigate to the deck detail page
         self.setup_user_session(self.page, user)
-        self.page.goto(f"{self.live_server.url}{reverse('main:deck_detail', kwargs={'pk': deck.pk})}")
+        self.page.goto(f"{self.live_server.url}{reverse('main:deck_detail', kwargs={'pk': deck.pk, 'url_path': deck.tutor.url_path})}")
         self.wait_for_page_load(self.page)
         
         # Click the review button
@@ -79,7 +79,7 @@ class TestFlashcardUI(UITestBase, StaticLiveServerTestCase):
         
         # Setup the user session and navigate to the deck detail page
         self.setup_user_session(self.page, user)
-        self.page.goto(f"{self.live_server.url}{reverse('main:deck_detail', kwargs={'pk': deck.pk})}")
+        self.page.goto(f"{self.live_server.url}{reverse('main:deck_detail', kwargs={'pk': deck.pk, 'url_path': deck.tutor.url_path})}")
         self.wait_for_page_load(self.page)
         
         # Click the review button
@@ -122,7 +122,7 @@ class TestFlashcardUI(UITestBase, StaticLiveServerTestCase):
         
         # Setup the user session and navigate to the deck detail page
         self.setup_user_session(self.page, user)
-        self.page.goto(f"{self.live_server.url}{reverse('main:deck_detail', kwargs={'pk': deck.pk})}")
+        self.page.goto(f"{self.live_server.url}{reverse('main:deck_detail', kwargs={'pk': deck.pk, 'url_path': deck.tutor.url_path})}")
         self.wait_for_page_load(self.page)
         
         # Click the edit button on the flashcard
@@ -176,7 +176,7 @@ class TestFlashcardUI(UITestBase, StaticLiveServerTestCase):
         
         # Setup the user session and navigate to the deck detail page
         self.setup_user_session(self.page, user)
-        self.page.goto(f"{self.live_server.url}{reverse('main:deck_detail', kwargs={'pk': deck.pk})}")
+        self.page.goto(f"{self.live_server.url}{reverse('main:deck_detail', kwargs={'pk': deck.pk, 'url_path': deck.tutor.url_path})}")
         self.wait_for_page_load(self.page)
         
         # Find and click the edit button on the flashcard

@@ -1,6 +1,6 @@
 class DefaultApplication:
-    def __init__(self):
-        self.title = 'Job Applications'  # Default title when no application is selected
+    def __init__(self, name = None):
+        self.title = name if name else'FlashSpeak'  # Default title when no application is selected
 
 def generic_context(request):
     from main.models import Tutor
