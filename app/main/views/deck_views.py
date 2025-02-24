@@ -38,7 +38,7 @@ class DeckViewSet(viewsets.ModelViewSet):
         message = None
         
         try:
-            cards = deck.generate_and_save_questions()
+            cards = deck.generate_and_save_flashcards()
             message = f'Generated {len(cards)} new questions!'
         except Exception as e:
             logger.error(f'Error generating questions: {str(e)}')
@@ -83,7 +83,7 @@ def deck_create(request, url_path):
                     
                     # Generate interview questions
                     try:
-                        created_cards = deck.generate_and_save_questions()
+                        created_cards = deck.generate_and_save_flashcards()
                         messages.success(request, f"Deck created successfully with {len(created_cards)} interview questions!")
                     except Exception as e:
                         logger.error(f"Error generating questions: {str(e)}")
@@ -108,15 +108,17 @@ def deck_edit(request, url_path, pk):
         form = DeckForm(request.POST, instance=deck)
         if form.is_valid():
             try:
-                # Try to generate questions first before saving anything
-                temp_deck = form.save(commit=False)
-                questions = temp_deck.generate_questions()
-                
-                # If we get here, AI succeeded, now save everything in a transaction
                 with transaction.atomic():
+                    # Save the deck first
                     deck = form.save()
-                    deck.save_questions(questions)
-                    messages.success(request, f"Deck updated with {len(questions)} new interview questions!")
+                    
+                    # Generate and save flashcards
+                    created_cards = deck.generate_and_save_flashcards()
+                    if created_cards:
+                        messages.success(request, f"Deck updated with {len(created_cards)} new flashcards!")
+                    else:
+                        messages.warning(request, "Deck updated, but no content was provided for flashcard generation.")
+                        
                 return redirect('main:deck_detail', url_path=url_path, pk=deck.pk)
                 
             except Exception as e:

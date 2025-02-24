@@ -10,18 +10,32 @@ class DeckForm(forms.ModelForm):
 
     class Meta:
         model = Deck
-        fields = ['name']
+        fields = ['name', 'description', 'content']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg',
                 'placeholder': 'Enter a name for your deck'
             }),
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Enter a description for your deck'
+            }),
+            'content': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 10,
+                'placeholder': 'Enter or paste the content to generate flashcards from'
+            }),
         }
         labels = {
             'name': 'Deck Name',
+            'description': 'Description',
+            'content': 'Content',
         }
         help_texts = {
             'name': 'Enter a descriptive name for your deck',
+            'description': 'Enter a description for your deck',
+            'content': 'Enter the text content that will be used to generate flashcards',
         } 
 
 class DocumentForm(forms.ModelForm):

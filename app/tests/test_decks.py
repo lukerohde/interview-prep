@@ -316,12 +316,12 @@ def test_other_user_access(authenticated_client, user, tutor):
 
 @pytest.mark.django_db
 def test_generate_questions_model_method(user, tutor, mock_openai_response):
-    """Test the generate_and_save_questions method on Deck model"""
+    """Test the generate_and_save_flashcards method on Deck model"""
     deck = DeckFactory(owner=user, tutor=tutor)
     
     with patch('main.ai_helpers.call_openai', return_value=json.dumps(mock_openai_response)):
         # Test generating questions
-        created_cards = deck.generate_and_save_questions()
+        created_cards = deck.generate_and_save_flashcards()
         
         # Verify cards were created
         assert len(created_cards) == 2

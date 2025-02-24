@@ -5,7 +5,9 @@ from uuid import uuid4
 from enum import Enum
 import yaml
 from .utils import do_something_handy
-from .ai_helpers import generate_interview_questions
+from string import Template
+import json
+from .ai_helpers import call_openai, extract_json
 
 class TutorConfig:
     @staticmethod
@@ -125,6 +127,16 @@ class Deck(models.Model):
         default='active',
         help_text='Status of the deck (e.g., active, archived)'
     )
+    description = models.TextField(
+        blank=True,
+        null=True,
+        help_text='Description of the deck'
+    )
+    content = models.TextField(
+        blank=True,
+        null=True,
+        help_text='Text content for generating flashcards'
+    )
 
     def __str__(self):
         return f"{self.name} ({self.tutor.deck_name})"
@@ -136,44 +148,72 @@ class Deck(models.Model):
     class Meta:
         ordering = ['-updated_at']
 
-    def get_existing_questions(self):
-        """Get existing auto-generated questions to avoid duplicates"""
+    def get_existing_flashcards(self):
+        """Get existing auto-generated flashcards to avoid duplicates"""
         return [
             {'question': card.front, 'suggested_answer': card.back}
             for card in self.flashcards.filter(tags__contains=['auto-generated'])
         ]
 
-    def generate_questions(self):
-        """Generate new AI interview questions without saving them"""
-        existing_questions = self.get_existing_questions()
+    def generate_flashcards(self):
+        """Generate new flashcards without saving them"""
+        existing_cards = self.get_existing_flashcards()
         
-        # Combine all document content
-        combined_content = "\n\n".join([doc.content for doc in self.documents.all()])
+        # Combine all available content sources
+        content_parts = []
+        if self.content and self.content.strip():
+            content_parts.append(self.content)
+        if self.documents.exists():
+            content_parts.extend(doc.content for doc in self.documents.all() if doc.content.strip())
+            
+        combined_content = "\n\n".join(content_parts)
         
-        return generate_interview_questions(
+        # Get the tutor's prompt configuration
+        config = self.tutor.get_config(self.owner)
+        prompts = config['prompts'].get('generate_flashcards', {})
+        
+        if not prompts or 'system' not in prompts or 'user' not in prompts:
+            raise ValueError(f"Tutor {self.tutor.name} does not have the required generate_flashcards prompts configured")
+        
+        # Format the user prompt with our variables
+        existing_questions_text = "\n" + json.dumps([q['question'] for q in existing_cards]) if existing_cards else ""
+        user_prompt = Template(prompts['user']).safe_substitute(
             content=combined_content,
-            existing_questions=existing_questions
+            existing_questions_text=existing_questions_text
         )
+        
+        # Call OpenAI using the helper
+        response = call_openai(prompts['system'], user_prompt)
+        return extract_json(response)
 
-    def save_questions(self, questions):
-        """Save the generated questions as flashcards"""
+    def save_flashcards(self, cards):
+        """Save the generated flashcards"""
         created_cards = []
-        for q in questions:
+        for card in cards:
             flashcard = FlashCard.objects.create(
                 user=self.owner,
-                front=q['question'],
-                back=q['suggested_answer'],
-                tags=[q['category'], 'auto-generated']
+                front=card['question'],
+                back=card['suggested_answer'],
+                tags=[card['category'], 'auto-generated']
             )
             flashcard.decks.add(self)
             created_cards.append(flashcard)
         return created_cards
 
-    def generate_and_save_questions(self):
-        """Generate and save new AI interview questions from documents"""
-        questions = self.generate_questions()
-        return self.save_questions(questions)
-
+    def generate_and_save_flashcards(self):
+        """Generate and save new flashcards from documents and content"""
+        # Check if we have any content to generate from
+        has_content = bool(self.content and self.content.strip())
+        has_documents = self.documents.exists() and any(doc.content.strip() for doc in self.documents.all())
+        
+        if not (has_content or has_documents):
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"No content provided for deck {self.name} (id: {self.id}). Skipping flashcard generation.")
+            return []
+            
+        cards = self.generate_flashcards()
+        return self.save_flashcards(cards)
 
 
 class ReviewStatus(str, Enum):

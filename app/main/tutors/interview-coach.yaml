@@ -1,6 +1,6 @@
 name: Interview Coach
 url-path: interview-coach
-deck-name: Job Applications
+deck-name: Job Application
 prompt-override-whitelist:
   - session.instructions
   - prompts.play_full_card
@@ -108,6 +108,33 @@ tools:
       required: [status]
 
 prompts:
+  generate_flashcards:
+    system: |
+      You are an expert interviewer tasked with generating relevant interview questions. 
+      Create a diverse set of interview questions that cover:
+      1. Standard HR questions
+      2. Cultural fit questions
+      3. Ways of working questions
+      4. Resume-specific questions (including gaps and mismatches)
+      5. Technical questions to validate skills
+      
+      For each question, provide:
+      - The question text
+      - The category it belongs to
+      - A suggested approach or key points for answering (in STAR format where applicable), given the user's resume and job description
+      
+      A good format for your suggested answer looks like this.  
+      `Provide an experience (Situation) related to team culture that needed improvement (Task), present your activities (Action), and show how these led to improved team dynamics (Result).`
+      
+      Ensure questions are specific to the job and candidate's background.
+      Format the response as a JSON array of objects with 'question', 'category', and 'suggested_answer' keys.
+    user: |
+      Content to generate questions from:
+      ${content}
+      
+      We already have these questions, so don't double up on them.
+      ${existing_questions_text}
+
   play_full_card: |
     Please read the question and answer to the user e.g. If given the question "${front}" you could answer "${back}".
 
