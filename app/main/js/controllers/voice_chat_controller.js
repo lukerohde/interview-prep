@@ -627,10 +627,10 @@ export default class extends Controller {
     const response = {
       type: "response.create"
     }
-    
-    if (event.detail && Object.keys(event.detail).length > 0) {
-      response.instructions = event.detail;
-    }
+    console.log(event)
+    // if (event.detail && Object.keys(event.detail).length > 0) {
+    //   response.instructions = event.detail;
+    // }
     console.log('Voice chat received please-respond', response)
     
     this.sendEvent(response)
