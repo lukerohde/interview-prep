@@ -10,7 +10,7 @@ app_name = 'main'
 
 # API Routes
 api_router = DefaultRouter()
-api_router.register(r'flashcards', flashcard_views.FlashCardViewSet, basename='api-flashcard')
+api_router.register(r'decks/(?P<deck_pk>[^/.]+)/flashcards', flashcard_views.FlashCardViewSet, basename='api-flashcard')
 api_router.register(r'tutors/(?P<url_path>[^/.]+)/decks', deck_views.DeckViewSet, basename='api-deck')
 # Voice chat endpoints handled separately below
 api_router.register(r'documents', document_views.DocumentViewSet, basename='api-document')
