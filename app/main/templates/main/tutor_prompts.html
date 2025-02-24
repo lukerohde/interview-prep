@@ -1,26 +1,66 @@
-{% extends "main/base.html" %}
+{% extends "base.html" %}
 {% load static %}
+{% load main_extras %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-2xl font-bold mb-6">{{ tutor.name }} - Prompt Settings</h1>
-    
-    <div class="space-y-6">
-        {% for key in whitelist %}
-            <div class="bg-white shadow rounded-lg p-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
-                    {{ key }}
-                </label>
-                <textarea
-                    data-key="{{ key }}"
-                    class="prompt-override w-full h-32 p-2 border rounded-md"
-                    placeholder="{{ defaults|get_item:key }}"
-                >{{ overrides|get_item:key|default:'' }}</textarea>
-                <div class="mt-2 text-sm text-gray-500">
-                    Default value will be used if left empty
+<div class="container-fluid h-100 p-0">
+    <div class="row h-100 g-0 px-3 pt-3">
+        <!-- Main Content Area -->
+        <div class="col-md-7 d-flex flex-column">
+            <div class="bg-white rounded border p-3 h-100">
+                <h1 class="display-6">{{ tutor.name }} - Prompt Settings</h1>
+                <p class="text-muted mb-4">Empty fields will use their default values</p>
+                
+                <div class="row g-4">
+                    {% for key in whitelist %}
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <label class="form-label fw-medium mb-0">
+                                            {{ key }}
+                                        </label>
+                                        <div class="save-indicator text-muted" style="display: none;">
+                                            <small><i class="bi bi-clock"></i> Saving...</small>
+                                        </div>
+                                    </div>
+                                    <textarea
+                                        data-key="{{ key }}"
+                                        class="prompt-override form-control"
+                                        rows="4"
+                                        placeholder="{{ defaults|get_item:key }}"
+                                    >{{ overrides|get_item:key|default:'' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
                 </div>
             </div>
-        {% endfor %}
+        </div>
+
+        <!-- Sidebar -->
+        <div id="sidebar" class="offcanvas-md offcanvas-end col-md-5">
+            <div class="offcanvas-header d-md-none">
+                <div class="h5 mb-0">Menu</div>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar"></button>
+            </div>
+            <div class="offcanvas-body p-md-3 pt-md-0">
+                <div class="bg-white rounded border h-100 d-flex flex-column overflow-hidden">
+                    <div class="nav flex-column d-md-none">
+                        <a class="text-decoration-none text-dark px-3 py-2 {% if request.resolver_match.url_name == 'deck_list' %}fw-bold{% endif %}" 
+                           href="{% url 'main:deck_list' url_path=tutor.url_path %}">
+                            <i class="bi bi-briefcase me-2"></i>
+                            <span>{{ tutor.deck_name }}</span>
+                        </a>
+                        <a class="text-decoration-none text-dark px-3 py-2"
+                           href="{% url 'account_logout' %}">
+                            <i class="bi bi-box-arrow-right me-2"></i> 
+                            <span>Logout</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -30,6 +70,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const textareas = document.querySelectorAll('.prompt-override');
+    let saveTimeout;
+    let saveInProgress = false;
     
     textareas.forEach(textarea => {
         // Show default value when focusing empty textarea
@@ -39,33 +81,57 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Save changes when textarea loses focus
+        // Auto-save on input after delay
+        textarea.addEventListener('input', function() {
+            clearTimeout(saveTimeout);
+            const card = this.closest('.card-body').querySelector('.save-indicator');
+            card.style.display = 'block';
+            saveTimeout = setTimeout(() => savePrompt(this), 1000);
+        });
+        
+        // Save immediately on blur if changes pending
         textarea.addEventListener('blur', function() {
-            const key = this.dataset.key;
-            const value = this.value.trim();
-            
-            fetch(`/{{ tutor.url_path }}/prompts/update/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: `key=${encodeURIComponent(key)}&value=${encodeURIComponent(value)}`
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    alert(data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Failed to save changes');
-            });
+            if (saveTimeout) {
+                clearTimeout(saveTimeout);
+                savePrompt(this);
+            }
         });
     });
     
-    // Helper function to get CSRF token
+    function savePrompt(textarea) {
+        if (saveInProgress) return;
+        
+        const key = textarea.dataset.key;
+        const value = textarea.value.trim();
+        saveInProgress = true;
+        
+        fetch(`/tutors/{{ tutor.url_path }}/prompts/update/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: `key=${encodeURIComponent(key)}&value=${encodeURIComponent(value)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Error saving prompt:', data.error);
+            }
+            saveInProgress = false;
+            document.querySelectorAll('.save-indicator').forEach(indicator => {
+                indicator.style.display = 'none';
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            saveInProgress = false;
+            document.querySelectorAll('.save-indicator').forEach(indicator => {
+                indicator.style.display = 'none';
+            });
+        });
+    }
+    
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {

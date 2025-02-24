@@ -9,8 +9,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # Get the tutors directory path from settings or use a default
-        tutors_dir = getattr(settings, 'TUTORS_DIR', os.path.join(settings.BASE_DIR, 'tutors'))
-        
+        tutors_dir = getattr(settings, 'TUTORS_DIR', os.path.join(settings.BASE_DIR, 'main/tutors'))
+        self.stdout.write(
+            self.style.SUCCESS(f'{tutors_dir}')
+        )
         # Find all .yaml files in the tutors directory
         yaml_files = []
         for root, _, files in os.walk(tutors_dir):
@@ -29,8 +31,8 @@ class Command(BaseCommand):
                     config_path=rel_path,
                     defaults={
                         'name': config.get('name'),
-                        'deck_name': config.get('deck_name'),
-                        'url_path': config.get('url_path'),
+                        'deck_name': config.get('deck-name'),
+                        'url_path': config.get('url-path'),
                     }
                 )
                 

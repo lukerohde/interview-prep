@@ -19,7 +19,6 @@ class VoiceChatViewSet(viewsets.ViewSet):
     def session(self, request, tutor_path=None):
         """Get voice chat session for a specific tutor"""
         logger.debug(f'Session request received for tutor: {tutor_path}')
-        
         api_key = settings.OPENAI_API_KEY
         if not api_key:
             error_msg = "Invalid API key. Please set your OpenAI API key in Django settings."
@@ -38,9 +37,6 @@ class VoiceChatViewSet(viewsets.ViewSet):
             
             url = 'https://api.openai.com/v1/realtime/sessions'
                 
-            # Set the overridden value
-            target[final_key] = value
-
             # Prepare session data from YAML config
             data = config['session']
             

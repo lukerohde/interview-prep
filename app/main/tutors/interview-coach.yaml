@@ -1,21 +1,21 @@
 name: Interview Coach
 url-path: interview-coach
-deck-name: Job Application
+deck-name: Job Applications
 prompt-override-whitelist:
   - session.instructions
   - prompts.play_full_card
   - prompts.review_card
   - tools.create_flashcard.description
-  - tools.create_flashcard.parameters.front
-  - tools.create_flashcard.parameters.back
-  - tools.create_flashcard.parameters.tags
+  - tools.create_flashcard.parameters.properties.front.description
+  - tools.create_flashcard.parameters.properties.back.description
+  - tools.create_flashcard.parameters.properties.tags.description
   - tools.update_flashcard.description
-  - tools.update_flashcard.parameters.front
-  - tools.update_flashcard.parameters.back
-  - tools.update_flashcard.parameters.tags
+  - tools.update_flashcard.parameters.properties.front.description
+  - tools.update_flashcard.parameters.properties.back.description
+  - tools.update_flashcard.parameters.properties.tags.description
   - tools.assess_answer.description
-  - tools.assess_answer.parameters.status
-  - tools.assess_answer.parameters.critique
+  - tools.assess_answer.parameters.properties.status.description
+  - tools.assess_answer.parameters.properties.critique.description
   - tools.start_review.description
 session:
   model: gpt-4o-mini-realtime-preview-2024-12-17

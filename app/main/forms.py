@@ -2,30 +2,26 @@ from django import forms
 from .models import Deck, Document
 
 class DeckForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set default values for hidden fields
+        self.initial['deck_type'] = Deck.DeckType.STUDY
+        self.initial['status'] = 'active'
+
     class Meta:
         model = Deck
-        fields = ['name', 'deck_type', 'status']
+        fields = ['name']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg',
                 'placeholder': 'Enter a name for your deck'
             }),
-            'deck_type': forms.Select(attrs={
-                'class': 'form-select',
-            }),
-            'status': forms.Select(attrs={
-                'class': 'form-select',
-            }),
         }
         labels = {
             'name': 'Deck Name',
-            'deck_type': 'Type',
-            'status': 'Status'
         }
         help_texts = {
             'name': 'Enter a descriptive name for your deck',
-            'deck_type': 'Choose the type of content this deck will contain',
-            'status': 'Current status of your deck'
         } 
 
 class DocumentForm(forms.ModelForm):

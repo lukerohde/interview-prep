@@ -72,23 +72,30 @@ def deck_create(request, url_path):
     if request.method == 'POST':
         form = DeckForm(request.POST)
         if form.is_valid():
-            with transaction.atomic():
-                deck = form.save(commit=False)
-                deck.owner = request.user
-                deck.tutor = request.tutor
-                deck.save()
-                
-                # Generate interview questions
-                try:
-                    created_cards = deck.generate_and_save_questions()
-                    messages.success(request, f"Deck created successfully with {len(created_cards)} interview questions!")
-                except Exception as e:
-                    logger.error(f"Error generating questions: {str(e)}")
-                    messages.warning(request, "Deck created, but there was an error generating interview questions.")
-                
-            return redirect('main:deck_detail', url_path=request.tutor.url_path, pk=deck.pk)
+            try:
+                with transaction.atomic():
+                    deck = form.save(commit=False)
+                    deck.owner = request.user
+                    deck.tutor = request.tutor
+                    #deck.deck_type = Deck.DeckType.STUDY
+                    deck.status = 'active'
+                    deck.save()
+                    
+                    # Generate interview questions
+                    try:
+                        created_cards = deck.generate_and_save_questions()
+                        messages.success(request, f"Deck created successfully with {len(created_cards)} interview questions!")
+                    except Exception as e:
+                        logger.error(f"Error generating questions: {str(e)}")
+                        messages.warning(request, "Deck created, but there was an error generating interview questions.")
+                    
+                return redirect('main:deck_detail', url_path=request.tutor.url_path, pk=deck.pk)
+            except Exception as e:
+                logger.error(f"Error creating deck: {str(e)}")
+                messages.error(request, "There was an error creating your deck. Please try again.")
     else:
         form = DeckForm()
+    
     return render(request, 'main/deck_form.html', {'form': form, 'tutor': request.tutor})
 
 @login_required
