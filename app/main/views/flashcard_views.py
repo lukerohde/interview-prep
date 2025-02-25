@@ -29,7 +29,7 @@ class FlashCardViewSet(viewsets.GenericViewSet,
             '-created_at'
         )
 
-    def update(self, request, pk=None):
+    def update(self, request, pk=None, deck_pk=None):
         """Custom update that handles both user edits and AI updates"""
         try:
             # Get card from filtered queryset (404 if not found or not owned)
