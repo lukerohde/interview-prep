@@ -76,6 +76,14 @@ class FlashCardViewSet(viewsets.GenericViewSet,
             'html': html
         })
 
+    def perform_create(self, serializer):
+        # Set the user from the request when creating flashcards
+        if isinstance(serializer, list):
+            for s in serializer:
+                s.save(user=self.request.user)
+        else:
+            serializer.save(user=self.request.user)
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data, many=isinstance(request.data, list))
         serializer.is_valid(raise_exception=True)
