@@ -10,36 +10,6 @@ import json
 from .ai_helpers import call_openai, extract_json
 import inflect
 
-class TutorConfig:
-    @staticmethod
-    def load_config(config_path, user=None):
-        """Load tutor config from YAML and apply user overrides"""
-        with open(config_path, 'r') as f:
-            config = yaml.safe_load(f)
-        
-        if user:
-            # Get user's overrides for this tutor
-            overrides = {
-                override.key: override.value 
-                for override in user.prompt_overrides.filter(
-                    tutor_url_path=config.get('url-path')
-                )
-            }
-            
-            # Apply overrides using dotted path notation
-            for key, value in overrides.items():
-                target = config
-                *path_parts, final_key = key.split('.')
-                
-                # Navigate to the correct nested dictionary
-                for part in path_parts:
-                    if part not in target:
-                        target[part] = {}
-                    target = target[part]
-                target[final_key] = value
-                
-        return config
-
 class Tutor(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     name = models.CharField(max_length=255, help_text='Name of the tutor')
@@ -69,7 +39,37 @@ class Tutor(models.Model):
         """Get tutor config with optional user overrides"""
         if not self.config_path:
             raise ValueError("No config path set for this tutor")
-        return TutorConfig.load_config(self.config_path, user)
+            
+        # Load base config
+        with open(self.config_path, 'r') as f:
+            config = yaml.safe_load(f)
+            
+        if user:
+            # Get whitelist of allowed override paths
+            whitelist = config.get('prompt-override-whitelist', [])
+            
+            # Get user's overrides for this tutor, filtering by whitelist
+            overrides = {
+                override.key: override.value 
+                for override in user.prompt_overrides.filter(
+                    tutor_url_path=config.get('url-path')
+                )
+                if override.key in whitelist
+            }
+            
+            # Apply whitelisted overrides using dotted path notation
+            for key, value in overrides.items():
+                target = config
+                *path_parts, final_key = key.split('.')
+                
+                # Navigate to the correct nested dictionary
+                for part in path_parts:
+                    if part not in target:
+                        target[part] = {}
+                    target = target[part]
+                target[final_key] = value
+                
+        return config
 
     class Meta:
         ordering = ['name']
