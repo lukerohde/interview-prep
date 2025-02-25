@@ -140,6 +140,7 @@ export default class extends Controller {
 
       const data = await response.json()
 
+      // TODO LUKE:  This code just looks terrible, refactor
       if (!response.ok) {
         // Format validation errors from DRF
         let errorMessage = 'Failed to update flashcard'

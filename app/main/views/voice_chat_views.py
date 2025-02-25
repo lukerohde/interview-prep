@@ -36,18 +36,9 @@ class VoiceChatViewSet(viewsets.ViewSet):
             }
             
             url = 'https://api.openai.com/v1/realtime/sessions'
-                
-            # Prepare session data from YAML config
-            data = config['session']
             
-            # Prepare our config data
-            config_data = {
-                'tools': config['tools'],
-                'prompts': config['prompts']
-            }
-
             logger.debug(f'Making request to {url}')
-            response = requests.post(url, headers=headers, json=data)
+            response = requests.post(url, headers=headers, json=config['session'])
             response.raise_for_status()
             
             # Get OpenAI response and merge with our config
@@ -56,8 +47,11 @@ class VoiceChatViewSet(viewsets.ViewSet):
             
             if 'client_secret' in response_data:
                 # Merge OpenAI response with our config
-                response_data.update(config_data)
-                response_data['client_secret'] = response_data['client_secret']['value']
+                response_data.update({
+                    'tools': config['tools'],
+                    'prompts': config['prompts'],
+                    'client_secret': response_data['client_secret']['value']
+                })
                 return Response(response_data)
             else:
                 return Response({"error": "No client secret in response"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

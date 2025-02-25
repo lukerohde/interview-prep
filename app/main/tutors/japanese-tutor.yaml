@@ -77,7 +77,7 @@ tools:
   start_review:
     type: function
     name: start_review
-    description: When the user asks you to start, run this tool.
+    description: Run this tool, when the user asks you to review flashcards or start the review, or フラッシュカードを始めてください.
     parameters:
       type: object
       properties: {}
@@ -127,7 +127,7 @@ prompts:
       ${content}
       
       We already have these flashcards, so don't create duplicates:
-      ${existing_questions_text}
+      ${existing_flashcards}
   play_full_card: |
     Please read both sides of this flashcard. Front: "${front}". Back: "${back}".
 

@@ -22,7 +22,7 @@ class TutorConfig:
             overrides = {
                 override.key: override.value 
                 for override in user.prompt_overrides.filter(
-                    tutor_url_path=config.get('url_path')
+                    tutor_url_path=config.get('url-path')
                 )
             }
             
@@ -165,8 +165,8 @@ class Deck(models.Model):
     def get_existing_flashcards(self):
         """Get existing auto-generated flashcards to avoid duplicates"""
         return [
-            {'question': card.front, 'suggested_answer': card.back}
-            for card in self.flashcards.filter(tags__contains=['auto-generated'])
+            {'front': card.front, 'back': card.back}
+            for card in self.flashcards.filter(tags__contains=['auto-generated']) # This is interesting/weird AI logic
         ]
 
     def generate_flashcards(self):
@@ -179,21 +179,19 @@ class Deck(models.Model):
             content_parts.append(self.content)
         if self.documents.exists():
             content_parts.extend(doc.content for doc in self.documents.all() if doc.content.strip())
-            
         combined_content = "\n\n".join(content_parts)
         
         # Get the tutor's prompt configuration
         config = self.tutor.get_config(self.owner)
         prompts = config['prompts'].get('generate_flashcards', {})
-        
         if not prompts or 'system' not in prompts or 'user' not in prompts:
             raise ValueError(f"Tutor {self.tutor.name} does not have the required generate_flashcards prompts configured")
         
         # Format the user prompt with our variables
-        existing_questions_text = "\n" + json.dumps([q['question'] for q in existing_cards]) if existing_cards else ""
+        existing_card_text = "\n" + json.dumps([q['front'] for q in existing_cards]) if existing_cards else ""
         user_prompt = Template(prompts['user']).safe_substitute(
             content=combined_content,
-            existing_questions_text=existing_questions_text
+            existing_flashcards=existing_card_text
         )
         
         # Call OpenAI using the helper
@@ -208,7 +206,7 @@ class Deck(models.Model):
                 user=self.owner,
                 front=card['question'],
                 back=card['suggested_answer'],
-                tags=[card['category'], 'auto-generated']
+                tags=[card['category'], 'auto-generated'] # TODO: This auto-generated things is AI thinking, I dunno if I like it.
             )
             flashcard.decks.add(self)
             created_cards.append(flashcard)

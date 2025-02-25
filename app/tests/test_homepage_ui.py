@@ -26,10 +26,10 @@ class TestHomePageUI(UITestBase, StaticLiveServerTestCase):
         self.page.goto(f"{self.live_server.url}{reverse('main:home')}")
         self.wait_for_page_load(self.page)
         
-        assert self.page.title() == 'FlashSpeak'
+        assert self.page.title() == deck.tutor.title
         name = self.page.locator("h1.display-6")
         assert name.is_visible()
-        assert name.text_content().strip() == deck.tutor.deck_name
+        assert name.text_content().strip() == deck.tutor.deck_name_plural
         
         deck_link = self.page.locator(f"text='{deck.name}'")
         assert deck_link.is_visible()
@@ -47,7 +47,7 @@ class TestHomePageUI(UITestBase, StaticLiveServerTestCase):
         self.page.goto(f"{self.live_server.url}{reverse('main:home')}")
         self.wait_for_page_load(self.page)
         
-        assert self.page.title() == 'FlashSpeak'
+        assert self.page.title() == "FlashSpeak"
         name = self.page.locator("h1.display-6")
         assert name.is_visible()
         assert name.text_content().strip() == "Tutors"
