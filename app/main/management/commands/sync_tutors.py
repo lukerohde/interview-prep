@@ -33,6 +33,7 @@ class Command(BaseCommand):
                         'name': config.get('name'),
                         'deck_name': config.get('deck-name'),
                         'url_path': config.get('url-path'),
+                        'content_placeholder': config.get('content-placeholder'),
                     }
                 )
                 

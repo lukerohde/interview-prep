@@ -1,6 +1,7 @@
 name: Interview Coach
 url-path: interview-coach
 deck-name: Job Application
+content-placeholder: Enter your resume and job description and any other context for generating interview questions
 prompt-override-whitelist:
   - session.instructions
   - prompts.play_full_card

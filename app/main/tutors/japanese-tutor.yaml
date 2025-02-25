@@ -1,6 +1,7 @@
 name: Japanese Tutor
 url-path: japanese-tutor
 deck-name: Study Deck
+content-placeholder: Enter flashcard text or general instructions here for generating flashcards
 prompt-override-whitelist:
   - session.instructions
   - prompts.play_full_card

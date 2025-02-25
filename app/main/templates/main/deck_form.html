@@ -33,9 +33,6 @@
               {% if form.name.errors %}
                 <div class="invalid-feedback">{{ form.name.errors|join:', ' }}</div>
               {% endif %}
-              {% if form.name.help_text %}
-                <div class="form-text text-muted">{{ form.name.help_text }}</div>
-              {% endif %}
             </div>
 
             <div class="mb-4">
@@ -46,18 +43,12 @@
               {% if form.description.errors %}
                 <div class="invalid-feedback">{{ form.description.errors|join:', ' }}</div>
               {% endif %}
-              {% if form.description.help_text %}
-                <div class="form-text text-muted">{{ form.description.help_text }}</div>
-              {% endif %}
             </div>
 
             <div class="mb-4">
               <label for="{{ form.content.id_for_label }}" class="form-label fw-bold">Content</label>
               <textarea name="content" class="form-control" id="{{ form.content.id_for_label }}" 
-                        rows="10" placeholder="Enter the content for your {{ tutor.deck_name|lower }} (e.g., text to generate flashcards from)">{{ form.content.value|default:'' }}</textarea>
-              {% if form.content.help_text %}
-                <div class="form-text text-muted">{{ form.content.help_text }}</div>
-              {% endif %}
+                        rows="10" placeholder="{{ tutor.content_placeholder|default:'Enter content to generate flashcards from' }}">{{ form.content.value|default:'' }}</textarea>
             </div>
 
             <div class="d-flex justify-content-between align-items-center">

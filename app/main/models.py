@@ -46,6 +46,7 @@ class Tutor(models.Model):
     deck_name = models.CharField(max_length=255, help_text='Display name for decks of this type')
     url_path = models.CharField(max_length=255, unique=True, help_text='URL path for this tutor (e.g. interview-coach)')
     config_path = models.CharField(max_length=255, unique=True, null=True, blank=True, help_text='Path to the YAML config file')
+    content_placeholder = models.CharField(max_length=255, blank=True, null=True, help_text='Custom placeholder text for the content field')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
