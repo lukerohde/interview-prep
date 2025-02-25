@@ -44,6 +44,7 @@ class DeckFactory(factory.django.DjangoModelFactory):
 class FlashcardFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = FlashCard
+        skip_postgeneration_save = True  # Prevents the automatic save after postgeneration
 
     user = factory.SubFactory(UserFactory)
     front = factory.Sequence(lambda n: f"Question {n}")
@@ -51,6 +52,12 @@ class FlashcardFactory(factory.django.DjangoModelFactory):
     front_last_review = None
     back_last_review = None
     tags = ['test']
+
+    @factory.post_generation
+    def save_flashcard(obj, create, extracted, **kwargs):
+        if create:
+            obj.save()
+
 
     @factory.post_generation
     def decks(self, create, extracted, **kwargs):
