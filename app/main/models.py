@@ -55,6 +55,11 @@ class Tutor(models.Model):
 
     _inflect_engine = inflect.engine()
 
+
+    @property
+    def title(self):
+        return self.name
+
     @property
     def deck_name_plural(self):
         """Return properly pluralized deck name using inflect"""

@@ -8,7 +8,7 @@ def generic_context(request):
     return {
         'project_name': 'Your Project Name',
         'current_user': request.user,
-        'application': DefaultApplication(),  # Provides a default application object
+        'application': getattr(request, 'tutor', DefaultApplication()),  # Provides a default application object
         'tutor': getattr(request, 'tutor', None),  # Get tutor from request if available
         'tutors': tutors,  # All tutors for navigation.  Having tutor and tutors is odd!
     }
