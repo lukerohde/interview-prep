@@ -14,7 +14,7 @@
         </div>
         {% endif %}
         <div class="card-header bg-primary bg-gradient text-white py-3">
-          <h1 class="card-title h3 mb-0">{% if form.instance.pk %}Edit{% else %}Create{% endif %} Deck</h1>
+          <h1 class="card-title h3 mb-0">{% if deck %}Edit{% else %}Create{% endif %} {{ tutor.deck_name }}</h1>
         </div>
         <div class="card-body p-4">
           <form method="post">
@@ -26,10 +26,10 @@
             </div>
             {% endif %}
             <div class="mb-4">
-              <label for="{{ form.name.id_for_label }}" class="form-label fw-bold">{{ form.name.label }}</label>
+              <label for="{{ form.name.id_for_label }}" class="form-label fw-bold">{{ tutor.deck_name }} Name</label>
               <input type="text" name="name" class="form-control form-control-lg {% if form.name.errors %}is-invalid{% endif %}" 
                      id="{{ form.name.id_for_label }}" value="{{ form.name.value|default:'' }}" 
-                     placeholder="Enter a name for your deck">
+                     placeholder="Enter a name for your {{ tutor.deck_name|lower }}">
               {% if form.name.errors %}
                 <div class="invalid-feedback">{{ form.name.errors|join:', ' }}</div>
               {% endif %}
@@ -42,7 +42,7 @@
               <label for="{{ form.description.id_for_label }}" class="form-label fw-bold">Description</label>
               <textarea name="description" class="form-control {% if form.description.errors %}is-invalid{% endif %}" 
                         id="{{ form.description.id_for_label }}" rows="3" 
-                        placeholder="Enter a description for your deck">{{ form.description.value|default:'' }}</textarea>
+                        placeholder="Enter a description for your {{ tutor.deck_name|lower }}">{{ form.description.value|default:'' }}</textarea>
               {% if form.description.errors %}
                 <div class="invalid-feedback">{{ form.description.errors|join:', ' }}</div>
               {% endif %}
@@ -54,7 +54,7 @@
             <div class="mb-4">
               <label for="{{ form.content.id_for_label }}" class="form-label fw-bold">Content</label>
               <textarea name="content" class="form-control" id="{{ form.content.id_for_label }}" 
-                        rows="10" placeholder="Enter the content for your deck (e.g., text to generate flashcards from)">{{ form.content.value|default:'' }}</textarea>
+                        rows="10" placeholder="Enter the content for your {{ tutor.deck_name|lower }} (e.g., text to generate flashcards from)">{{ form.content.value|default:'' }}</textarea>
               {% if form.content.help_text %}
                 <div class="form-text text-muted">{{ form.content.help_text }}</div>
               {% endif %}
@@ -62,10 +62,10 @@
 
             <div class="d-flex justify-content-between align-items-center">
               <a href="{% url 'main:deck_list' url_path=tutor.url_path %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-2"></i>Back to Decks
+                <i class="bi bi-arrow-left me-2"></i>Back to {{ tutor.deck_name_plural }}
               </a>
               <button type="submit" class="btn btn-primary">
-                <i class="bi bi-save me-2"></i>Save Deck
+                <i class="bi bi-save me-2"></i>Save {{ tutor.deck_name }}
               </button>
             </div>
           </form>

@@ -48,7 +48,7 @@
                         <a class="nav-link {% if request.resolver_match.url_name == 'deck_list' %}active{% endif %}" 
                            href="{% url 'main:deck_list' url_path=tutor.url_path %}">
                             <i class="bi bi-briefcase me-1"></i>
-                            <span>{{ tutor.deck_name }}</span>
+                            <span>{{ tutor.deck_name_plural }}</span>
                         </a>
                     </li>
                     <li class="nav-item">

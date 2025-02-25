@@ -8,6 +8,7 @@ from .utils import do_something_handy
 from string import Template
 import json
 from .ai_helpers import call_openai, extract_json
+import inflect
 
 class TutorConfig:
     @staticmethod
@@ -50,6 +51,13 @@ class Tutor(models.Model):
 
     def __str__(self):
         return self.name
+
+    _inflect_engine = inflect.engine()
+
+    @property
+    def deck_name_plural(self):
+        """Return properly pluralized deck name using inflect"""
+        return self._inflect_engine.plural(self.deck_name)
 
     def get_config(self, user=None):
         """Get tutor config with optional user overrides"""

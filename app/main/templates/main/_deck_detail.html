@@ -1,53 +1,41 @@
 {% load static %}
 
-<div class="list-group-item list-group-item-action py-3">
-  <div class="row align-items-center">
-    <div class="col-md-6">
-      <h5 class="mb-1">
-        <a href="{% url 'main:deck_detail' url_path=tutor.url_path pk=deck.pk %}" class="text-decoration-none link-primary">
-          {{ deck.name }}
-        </a>
-      </h5>
-      <span class="badge bg-secondary">{{ deck.get_deck_type_display }}</span>
-      {% with status=deck.status %}
-        {% if status == 'draft' %}
-          <span class="badge bg-secondary">{{ deck.get_status_display }}</span>
-        {% elif status == 'active' %}
-          <span class="badge bg-success">{{ deck.get_status_display }}</span>
-        {% elif status == 'archived' %}
-          <span class="badge bg-info">{{ deck.get_status_display }}</span>
-        {% endif %}
-      {% endwith %}
-      <div class="text-muted small mt-1">
-        <i class="bi bi-clock me-1"></i>Last updated: {{ deck.updated_at|date:"F j, Y, g:i a" }}
-      </div>
-      <div class="text-muted small">
-        <i class="bi bi-layers me-1"></i>{{ deck.flashcards.count }} cards
-        {% if deck.documents.count %}
-        <span class="ms-2">
-          <i class="bi bi-file-text me-1"></i>{{ deck.documents.count }} documents
-        </span>
-        {% endif %}
+<div class="card shadow-sm position-relative hover-lift">
+  <a href="{% url 'main:deck_detail' url_path=tutor.url_path pk=deck.pk %}" class="text-decoration-none text-dark stretched-link">
+    <div class="card-body py-3">
+      <div class="row">
+        <div class="col">
+          <h5 class="mb-2">{{ deck.name }}</h5>
+          {% if deck.description %}
+          <p class="mb-2 text-muted">{{ deck.description }}</p>
+          {% endif %}
+          <div class="text-muted small">
+            <i class="bi bi-layers me-1"></i>{{ deck.flashcards.count }} cards
+            <span class="ms-2">
+              <i class="bi bi-clock me-1"></i>{{ deck.updated_at|date:"F j, Y" }}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="col-md-6 d-flex justify-content-md-end mt-3 mt-md-0">
-      <div class="btn-group">
-        <a href="{% url 'main:deck_edit' url_path=tutor.url_path pk=deck.pk %}" 
-           class="btn btn-outline-primary" title="Edit Deck">
-          <i class="bi bi-pencil-square me-md-2"></i>
-          <span class="d-none d-md-inline">Edit</span>
-        </a>
-        <form action="{% url 'main:deck_delete' url_path=tutor.url_path pk=deck.pk %}" 
-              method="post" class="d-inline">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-outline-danger" 
-                  title="Delete Deck"
-                  onclick="return confirm('Are you sure you want to delete this deck?');">
-            <i class="bi bi-trash me-md-2"></i>
-            <span class="d-none d-md-inline">Delete</span>
-          </button>
-        </form>
-      </div>
+  </a>
+  <div class="position-absolute top-0 end-0 p-3">
+    <div class="d-flex gap-2">
+      <a href="{% url 'main:deck_edit' url_path=tutor.url_path pk=deck.pk %}" 
+         class="btn btn-link text-primary p-0 z-2 position-relative" 
+         title="Edit {{ tutor.deck_name }}">
+        <i class="bi bi-pencil-fill"></i>
+      </a>
+      <form action="{% url 'main:deck_delete' url_path=tutor.url_path pk=deck.pk %}" 
+            method="post" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" 
+                class="btn btn-link text-danger p-0 z-2 position-relative" 
+                title="Delete {{ tutor.deck_name }}"
+                onclick="return confirm('Are you sure you want to delete this {{ tutor.deck_name|lower }}?');">
+          <i class="bi bi-trash-fill"></i>
+        </button>
+      </form>
     </div>
   </div>
 </div>
