@@ -23,17 +23,19 @@
 
 /* Desktop Sidebar */
 @media (min-width: 768px) {
-    #sidebar {
+    #sidebar, #deckSidebar {
         height: 100% !important;
         margin: 0;
     }
 
-    #sidebar .offcanvas-body {
+    #sidebar .offcanvas-body,
+    #deckSidebar .offcanvas-body {
         height: 100%;
         padding: 0;
     }
 
-    #sidebar .bg-white {
+    #sidebar .bg-white,
+    #deckSidebar .bg-white {
         height: 100%;
         margin-right: -0.75rem;
     }
@@ -43,7 +45,7 @@
 
 /* Mobile Sidebar */
 @media (max-width: 768px) {
-    #sidebar {
+    #sidebar, #deckSidebar {
         width: 100%;
         max-width: 320px;
     }

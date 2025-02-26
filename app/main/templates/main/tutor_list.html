@@ -1,6 +1,23 @@
 {% extends "base.html" %}
 
 {% block content %}
+<!-- Mobile Navigation -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="navOffcanvas">
+    <div class="offcanvas-header">
+        <div class="h5 mb-0">Menu</div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        <div class="nav flex-column">
+            <a class="text-decoration-none text-dark px-3 py-2"
+               href="{% url 'account_logout' %}">
+                <i class="bi bi-box-arrow-right me-2"></i> 
+                <span>Logout</span>
+            </a>
+        </div>
+    </div>
+</div>
+
 <div class="container mt-4">
     <h1 class="display-6">Tutors</h1>
     
