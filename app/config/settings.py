@@ -31,8 +31,8 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', None)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',')
-CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if host]
-CSRF_COOKIE_SECURE = True
+CSRF_TRUSTED_ORIGINS = [f"https://{host}" for host in ALLOWED_HOSTS if host] + [f"http://{host}" for host in ALLOWED_HOSTS if host]
+CSRF_COOKIE_SECURE = not DEBUG
 #SESSION_COOKIE_SECURE = True
 
 # Application definition

@@ -108,7 +108,7 @@ COPY --from=devtest /home/pyuser/app/config /home/pyuser/app/config
 COPY --from=devtest /home/pyuser/app/templates /home/pyuser/app/templates
 COPY --from=devtest /home/pyuser/app/manage.py /home/pyuser/app/manage.py
 COPY --from=devtest /home/pyuser/app/start /home/pyuser/app/start
-
+COPY --from=devtest /home/pyuser/app/collectstatic /home/pyuser/app/collectstatic
 # Environment
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
