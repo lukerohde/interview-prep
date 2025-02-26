@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: our-meals
+    name: flashspeak
     runtime: docker
     plan: starter
     dockerfilePath: ./app.dockerfile
@@ -8,9 +8,9 @@ services:
     healthCheckPath: /
     region: singapore
     domains: 
-      - dev.ourmeals.online
+      - flashspeak.online
     # repo: https://github.com/lukerohde/our-meals
-    branch: feature/scaling
+    branch: main
     numInstances: 1
     # scaling: # Autoscaling configuration (not available for hobby plans)
     #   minInstances: 1
@@ -23,25 +23,25 @@ services:
       - key: DJANGO_DEBUG
         value: "0"
       - key: DJANGO_ALLOWED_HOSTS
-        value: our-meals.onrender.com,dev.ourmeals.online
+        value: www.flashspeak.online,flashspeak.online,flashspeak.onrender.com
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DJANGO_SUPERUSER_USERNAME
         value: admin
       - key: DJANGO_SUPERUSER_EMAIL
-        value: admin@ourmeals.online
+        value: admin@flashspeak.online
       - key: DJANGO_SUPERUSER_PASSWORD
         generateValue: true
       - key: DATABASE_URL
         fromDatabase:
-          name: our-meals-db
+          name: flashspeak-db
           property: connectionString
       - key: OPENAI_API_KEY
         sync: false
 databases:
-  - name: our-meals-db
+  - name: flashspeak-db
     region: singapore
     postgresMajorVersion: "15"
-    databaseName: our_meals
+    databaseName: flashspeak
     plan: free
     ipAllowList: [] # only allow internal connections
