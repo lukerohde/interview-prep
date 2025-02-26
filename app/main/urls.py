@@ -5,6 +5,11 @@ from .views import voice_chat_views
 from .views import flashcard_views
 from .views import document_views
 from .views import tutor_views
+# from . import view_application
+# from . import view_voice_chat
+# from . import view_flashcard
+# from . import view_text_ai_response
+
 
 app_name = 'main'
 
@@ -14,6 +19,10 @@ api_router.register(r'decks/(?P<deck_pk>[^/.]+)/flashcards', flashcard_views.Fla
 api_router.register(r'tutors/(?P<url_path>[^/.]+)/decks', deck_views.DeckViewSet, basename='api-deck')
 # Voice chat endpoints handled separately below
 api_router.register(r'documents', document_views.DocumentViewSet, basename='api-document')
+# api_router.register(r'flashcards', view_flashcard.FlashCardViewSet, basename='api-flashcard')
+# api_router.register(r'applications', view_application.ApplicationViewSet, basename='api-application')
+# api_router.register(r'voice-chat', view_voice_chat.VoiceChatViewSet, basename='api-voice-chat')
+# api_router.register(r'text-ai-response', view_text_ai_response.TextAIResponseViewSet, basename='text-ai-response')
 
 api_patterns = [
     path('api/', include(api_router.urls)),
@@ -41,6 +50,14 @@ view_patterns = [
         path('decks/<uuid:pk>/edit/', deck_views.deck_edit, name='deck_edit'),
         path('decks/<uuid:pk>/delete/', deck_views.deck_delete, name='deck_delete'),
     ])),
+    # path('', view_application.application_list, name='application_list'),
+    # path('applications/', include([
+    #     path('', view_application.application_list, name='application_list'),
+    #     path('create/', view_application.application_create, name='application_create'),
+    #     path('<uuid:pk>/', view_application.application_detail, name='application_detail'),
+    #     path('<uuid:pk>/edit/', view_application.application_edit, name='application_edit'),
+    #     path('<uuid:pk>/delete/', view_application.application_delete, name='application_delete'),
+    # ]))
 ]
 
 urlpatterns = api_patterns + view_patterns
