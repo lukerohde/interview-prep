@@ -87,7 +87,8 @@ class FlashCardViewSet(viewsets.GenericViewSet,
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data, many=isinstance(request.data, list))
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+
+        serializer.save(user=self.request.user)
         
         # Handle both single item and list cases for getting IDs
         if isinstance(serializer.data, list):
