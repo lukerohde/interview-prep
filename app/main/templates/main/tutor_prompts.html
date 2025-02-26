@@ -11,30 +11,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
         </div>
         <div class="offcanvas-body">
-            <div class="nav flex-column">
-                {% if tutors.count > 1 %}
-                <a class="text-decoration-none text-dark px-3 py-2 {% if request.resolver_match.url_name == 'home' %}fw-bold{% endif %}" 
-                   href="{% url 'main:home' %}">
-                    <i class="bi bi-people me-2"></i>
-                    <span>Tutors</span>
-                </a>
-                {% endif %}
-                <a class="text-decoration-none text-dark px-3 py-2 {% if request.resolver_match.url_name == 'deck_list' %}fw-bold{% endif %}" 
-                   href="{% url 'main:deck_list' url_path=tutor.url_path %}">
-                    <i class="bi bi-briefcase me-2"></i>
-                    <span>{{ tutor.deck_name_plural }}</span>
-                </a>
-                <a class="text-decoration-none text-dark px-3 py-2 {% if request.resolver_match.url_name == 'tutor_prompts' %}fw-bold{% endif %}" 
-                   href="{% url 'main:tutor_prompts' url_path=tutor.url_path %}">
-                    <i class="bi bi-gear me-2"></i>
-                    <span>Configure Prompts</span>
-                </a>
-                <a class="text-decoration-none text-dark px-3 py-2"
-                   href="{% url 'account_logout' %}">
-                    <i class="bi bi-box-arrow-right me-2"></i> 
-                    <span>Logout</span>
-                </a>
-            </div>
+            {% include 'main/_mobile_nav.html' %}
         </div>
     </div>
 
