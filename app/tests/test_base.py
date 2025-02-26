@@ -2,7 +2,7 @@ import pytest
 from django.test import Client, TestCase
 from django.contrib.messages import get_messages
 from django.urls import reverse
-from .factories import UserFactory, ApplicationFactory
+from .factories import UserFactory, DeckFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -23,6 +23,12 @@ class BaseTestCase(TestCase):
         user = UserFactory()
         self.login_user(user)
         return user
+        
+    def setup_tutor(self, tutor):
+        """Set up tutor in session and middleware."""
+        session = self.client.session
+        session['tutor_path'] = tutor.url_path
+        session.save()
     
     def get_messages_list(self, response):
         """Get list of messages from response."""

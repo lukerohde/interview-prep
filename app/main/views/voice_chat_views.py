@@ -1,23 +1,24 @@
 import os
 import json
-import yaml
 import logging
 import requests
 from rest_framework.response import Response
 from rest_framework import status, permissions, viewsets
 from rest_framework.decorators import action
 from django.conf import settings
-from pathlib import Path
+from django.shortcuts import get_object_or_404
+from ..models import Tutor
 
 logger = logging.getLogger(__name__)
 
 class VoiceChatViewSet(viewsets.ViewSet):
     permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'tutor_path'  # Use tutor's url_path for lookup
     
-    @action(detail=False, methods=['get'])
-    def session(self, request):
-        logger.debug('Session request received')
-        
+    @action(detail=True, methods=['get'])
+    def session(self, request, tutor_path=None):
+        """Get voice chat session for a specific tutor"""
+        logger.debug(f'Session request received for tutor: {tutor_path}')
         api_key = settings.OPENAI_API_KEY
         if not api_key:
             error_msg = "Invalid API key. Please set your OpenAI API key in Django settings."
@@ -25,28 +26,19 @@ class VoiceChatViewSet(viewsets.ViewSet):
             return Response({"error": error_msg}, status=status.HTTP_401_UNAUTHORIZED)
 
         try:
+            # Get tutor by url_path
+            tutor = get_object_or_404(Tutor, url_path=tutor_path)
+            config = tutor.get_config(request.user)
+            
             headers = {
                 'Authorization': f'Bearer {api_key}',
                 'Content-Type': 'application/json'
             }
             
             url = 'https://api.openai.com/v1/realtime/sessions'
-            # Load configuration from YAML
-            yaml_path = Path(__file__).parent.parent / 'voice-chat-prompt.yaml'
-            with open(yaml_path, 'r') as f:
-                config = yaml.safe_load(f)
-
-            # Prepare session data from YAML config
-            data = config['session']
             
-            # Prepare our config data
-            config_data = {
-                'tools': config['tools'],
-                'prompts': config['prompts']
-            }
-
             logger.debug(f'Making request to {url}')
-            response = requests.post(url, headers=headers, json=data)
+            response = requests.post(url, headers=headers, json=config['session'])
             response.raise_for_status()
             
             # Get OpenAI response and merge with our config
@@ -55,8 +47,11 @@ class VoiceChatViewSet(viewsets.ViewSet):
             
             if 'client_secret' in response_data:
                 # Merge OpenAI response with our config
-                response_data.update(config_data)
-                response_data['client_secret'] = response_data['client_secret']['value']
+                response_data.update({
+                    'tools': config['tools'],
+                    'prompts': config['prompts'],
+                    'client_secret': response_data['client_secret']['value']
+                })
                 return Response(response_data)
             else:
                 return Response({"error": "No client secret in response"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

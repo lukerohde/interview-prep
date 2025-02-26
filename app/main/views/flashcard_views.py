@@ -7,8 +7,8 @@ from django.db.models import Q, F
 from django.utils import timezone
 from django.db import models
 from random import choice
-from .models import FlashCard, ReviewStatus
-from .serializers import FlashCardSerializer
+from main.models import FlashCard, ReviewStatus
+from main.serializers import FlashCardSerializer
 
 class FlashCardViewSet(viewsets.GenericViewSet,
                      viewsets.mixins.ListModelMixin,
@@ -18,14 +18,18 @@ class FlashCardViewSet(viewsets.GenericViewSet,
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Only return flashcards belonging to the current user, sorted by most recent review
-        return FlashCard.objects.filter(user=self.request.user).order_by(
+        # Return flashcards belonging to the current user and specific deck
+        deck_id = self.kwargs.get('deck_pk')
+        return FlashCard.objects.filter(
+            user=self.request.user,
+            decks__id=deck_id  # Filter by specific deck
+        ).order_by(
             models.F('front_last_review').desc(nulls_last=True),
             models.F('back_last_review').desc(nulls_last=True),
             '-created_at'
         )
 
-    def update(self, request, pk=None):
+    def update(self, request, pk=None, deck_pk=None):
         """Custom update that handles both user edits and AI updates"""
         try:
             # Get card from filtered queryset (404 if not found or not owned)
@@ -72,6 +76,14 @@ class FlashCardViewSet(viewsets.GenericViewSet,
             'html': html
         })
 
+    def perform_create(self, serializer):
+        # Set the user from the request when creating flashcards
+        if isinstance(serializer, list):
+            for s in serializer:
+                s.save(user=self.request.user)
+        else:
+            serializer.save(user=self.request.user)
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data, many=isinstance(request.data, list))
         serializer.is_valid(raise_exception=True)
@@ -99,11 +111,11 @@ class FlashCardViewSet(viewsets.GenericViewSet,
         headers = self.get_success_headers(serializer.data)
         return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
-    @action(detail=False, methods=['get'])
-    def next_review(self, request):
+    @action(detail=False, methods=['get'], url_path='next_review')
+    def next_review(self, request, deck_pk=None):
         """Get the next card due for review"""
         now = timezone.now()
-        queryset = self.get_queryset()
+        queryset = self.get_queryset()  # get_queryset already filters by deck_pk
 
         # Get the side to review
         side = request.query_params.get('reviewSide', 'either')
@@ -151,8 +163,8 @@ class FlashCardViewSet(viewsets.GenericViewSet,
 
 
 
-    @action(detail=True, methods=['post'])
-    def review(self, request, pk=None):
+    @action(detail=True, methods=['post'], url_path='review')
+    def review(self, request, pk=None, deck_pk=None):
         """Update review status for a card"""
         card = self.get_object()
         status = request.data.get('status')

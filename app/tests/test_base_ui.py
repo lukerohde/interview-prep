@@ -11,12 +11,15 @@ class UITestBase:
         client = Client()
         client.force_login(user)
         
-        # Get CSRF token by making a GET request
-        response = client.get(reverse('main:application_list'))
-        csrf_token = client.cookies['csrftoken']
-        
-        # Add both session and CSRF cookies
+        # Get session cookie
+        response = client.get(reverse('main:home'))
         session_cookie = client.cookies['sessionid']
+        
+        # Get CSRF token
+        from django.middleware.csrf import get_token
+        csrf_token = get_token(response.wsgi_request)
+        
+        # Add session and CSRF cookies to the page context
         page.context.add_cookies([
             {
                 'name': 'sessionid',
@@ -26,7 +29,7 @@ class UITestBase:
             },
             {
                 'name': 'csrftoken',
-                'value': csrf_token.value,
+                'value': csrf_token,
                 'domain': 'localhost',
                 'path': '/',
             }

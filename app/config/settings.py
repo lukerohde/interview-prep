@@ -63,6 +63,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'main.middleware.TutorMiddleware',  # Add tutor to request
 ]
 
 ROOT_URLCONF = 'config.urls'

@@ -1,7 +1,7 @@
 # tests/factories.py
 import factory
 from django.contrib.auth.models import User
-from main.models import Application, FlashCard
+from main.models import Deck, FlashCard, Tutor
 from django.utils import timezone
 
 class UserFactory(factory.django.DjangoModelFactory):
@@ -21,19 +21,30 @@ class UserFactory(factory.django.DjangoModelFactory):
         if create:
             obj.save()
 
-class ApplicationFactory(factory.django.DjangoModelFactory):
+class TutorFactory(factory.django.DjangoModelFactory):
     class Meta:
-        model = Application
+        model = Tutor
+        django_get_or_create = ('url_path',)
+    
+    name = factory.Sequence(lambda n: f"Test Tutor {n}")
+    deck_name = factory.Sequence(lambda n: f"Test Tutor Decks")
+    url_path = factory.Sequence(lambda n: f"test-tutor-{n}")
+    config_path = factory.Sequence(lambda n: f"tutors/test_tutor_{n}.yaml")
+
+class DeckFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Deck
     
     owner = factory.SubFactory(UserFactory)
-    name = factory.Sequence(lambda n: f"Software Engineer {n}")
-    status = 'draft'
-    resume = factory.Sequence(lambda n: f"Resume content for application {n}")
-    job_description = factory.Sequence(lambda n: f"Job description for position {n}")
+    tutor = factory.SubFactory(TutorFactory)
+    name = factory.Sequence(lambda n: f"Study Deck {n}")
+    status = 'active'
+    deck_type = Deck.DeckType.STUDY
 
 class FlashcardFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = FlashCard
+        skip_postgeneration_save = True  # Prevents the automatic save after postgeneration
 
     user = factory.SubFactory(UserFactory)
     front = factory.Sequence(lambda n: f"Question {n}")
@@ -43,9 +54,15 @@ class FlashcardFactory(factory.django.DjangoModelFactory):
     tags = ['test']
 
     @factory.post_generation
-    def applications(self, create, extracted, **kwargs):
+    def save_flashcard(obj, create, extracted, **kwargs):
+        if create:
+            obj.save()
+
+
+    @factory.post_generation
+    def decks(self, create, extracted, **kwargs):
         if not create:
             return
         if extracted:
-            for application in extracted:
-                self.applications.add(application)
+            for deck in extracted:
+                self.decks.add(deck)

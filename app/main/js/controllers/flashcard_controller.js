@@ -7,7 +7,8 @@ export default class extends Controller {
     nextReviewUrl: String,
     reviewUrlTemplate: String,
     deleteUrlTemplate: String,
-    reviewSide: String  
+    reviewSide: String,
+    csrfToken: String
   }
 
   editModal = null
@@ -140,6 +141,7 @@ export default class extends Controller {
 
       const data = await response.json()
 
+      // TODO LUKE:  This code just looks terrible, refactor
       if (!response.ok) {
         // Format validation errors from DRF
         let errorMessage = 'Failed to update flashcard'
@@ -440,11 +442,7 @@ export default class extends Controller {
   }
 
   async postWithToken(url, data, method = 'POST') {
-    const csrfToken = document.cookie.split('; ')
-      .find(row => row.startsWith('csrftoken='))
-      ?.split('=')[1];
-
-    if (!csrfToken) {
+    if (!this.csrfTokenValue) {
       throw new Error('CSRF token not found')
     }
 
@@ -453,7 +451,7 @@ export default class extends Controller {
       credentials: 'same-origin',
       headers: {
         'Content-Type': 'application/json',
-        'X-CSRFToken': csrfToken,
+        'X-CSRFToken': this.csrfTokenValue,
       },
       body: JSON.stringify(data)
     })

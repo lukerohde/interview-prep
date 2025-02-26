@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Mobile Navigation -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="navOffcanvas">
+    <div class="offcanvas-header">
+        <div class="h5 mb-0">Menu</div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+    </div>
+    <div class="offcanvas-body">
+        {% include 'main/_mobile_nav.html' %}
+    </div>
+</div>
+
+<div class="container mt-4">
+    <h1 class="display-6">Tutors</h1>
+    
+    <div class="row mt-4">
+        {% for tutor in tutors %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100 position-relative">
+                <a href="{% url 'main:deck_list' url_path=tutor.url_path %}" class="text-decoration-none text-dark stretched-link">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ tutor.name }}</h5>
+                        <p class="card-text">{{ tutor.deck_name_plural }}</p>
+                    </div>
+                </a>
+                <div class="card-footer bg-transparent border-0">
+                    <div class="d-flex justify-content-end">
+                        <a href="{% url 'main:tutor_prompts' tutor.url_path %}" class="btn btn-outline-secondary btn-sm z-2 position-relative">
+                            <i class="bi bi-gear"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                No tutors available. Please contact an administrator to set up tutors.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

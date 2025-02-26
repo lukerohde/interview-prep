@@ -18,7 +18,18 @@ def browser_context(request):
     headed = request.config.getoption("--headed", False)
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=not headed)
-        context = browser.new_context(permissions=["clipboard-read", "clipboard-write"])
+        context = browser.new_context(
+            permissions=["clipboard-read", "clipboard-write"],
+            accept_downloads=True,
+            # Enable cookie persistence
+            storage_state={
+                "cookies": [],
+                "origins": [{
+                    "origin": "http://localhost",
+                    "localStorage": []
+                }]
+            }
+        )
         yield context
         browser.close()
 

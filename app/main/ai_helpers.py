@@ -35,62 +35,6 @@ def call_openai(system_prompt: str, user_prompt: str) -> str:
     )
     return response.choices[0].message.content
 
-def generate_interview_questions(job_description: str, resume: str, existing_questions: List[Dict] = None) -> List[Dict]:
-    """
-    Generate interview questions based on the job description and resume.
-    
-    Parameters:
-        job_description (str): The job description text
-        resume (str): The resume text
-        existing_questions (List[Dict]): List of existing questions to avoid duplicates
-        
-    Returns:
-        List[Dict]: List of generated questions with their categories and suggested answers
-    """
-    system_prompt = """
-    You are an expert interviewer tasked with generating relevant interview questions. 
-    Create a diverse set of interview questions that cover:
-    1. Standard HR questions
-    2. Cultural fit questions
-    3. Ways of working questions
-    4. Resume-specific questions (including gaps and mismatches)
-    5. Technical questions to validate skills
-    
-    For each non-technical question, provide:
-    - The question text
-    - The category it belongs to
-    - A suggested approach or key points for answering (in STAR format where applicable), given the user's resume and job description
-
-    A good format for your suggested answer looks like this.  
-    `Provide an experience (Situation) related to team culture that needed improvement (Task), present your activities (Action), and show how these led to improved team dynamics (Result).`
-
-    For each technical question, provide:
-    - The question text based on technical requirements of the job
-    - The category it belongs to: techinical
-    - A clear and concise explanation
-
-    Ensure questions are specific to the job and candidate's background.
-    Format the response as a JSON array of objects with 'question', 'category', and 'suggested_answer' keys.
-    """
-    
-    existing_questions_text = "\n\nExisting questions to avoid:\n" + \
-        json.dumps([q['question'] for q in (existing_questions or [])]) if existing_questions else ""
-    
-    user_prompt = f"""
-    Job Description:
-    {job_description}
-    
-    Resume:
-    {resume}
-    {existing_questions_text}
-    
-    As a professional interviewer, generate a set of unique interview questions based on this information.
-    """
-    
-    response = call_openai(system_prompt, user_prompt)
-    data = extract_json(response)
-    return data
-
 def extract_json(text: str) -> List[Dict]:
     """
     Extract JSON from a string that might contain markdown code blocks.

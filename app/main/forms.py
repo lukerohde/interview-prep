@@ -1,38 +1,68 @@
 from django import forms
-from .models import Application
+from .models import Deck, Document
 
-class ApplicationForm(forms.ModelForm):
+class DeckForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set default values for hidden fields
+        self.initial['deck_type'] = Deck.DeckType.STUDY
+        self.initial['status'] = 'active'
+
     class Meta:
-        model = Application
-        fields = ['name', 'status', 'resume', 'job_description']
+        model = Deck
+        fields = ['name', 'description', 'content']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg',
-                'placeholder': 'Enter the position or company name'
+                'placeholder': 'Enter a name for your deck'
             }),
-            'status': forms.Select(attrs={
-                'class': 'form-select',
+            'description': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Enter a description for your deck'
             }),
-            'resume': forms.Textarea(attrs={
+            'content': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 10,
-                'placeholder': 'Paste your resume or CV content here'
-            }),
-            'job_description': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 10,
-                'placeholder': 'Paste the full job description here'
+                'placeholder': 'Enter or paste the content to generate flashcards from'
             }),
         }
         labels = {
-            'name': 'Position/Company',
-            'status': 'Application Status',
-            'resume': 'Resume/CV',
-            'job_description': 'Job Description'
+            'name': 'Deck Name',
+            'description': 'Description',
+            'content': 'Content',
         }
         help_texts = {
-            'name': 'Enter the name of the position or company you are applying to',
-            'status': 'Current status of your application',
-            'resume': 'Your resume or CV content that will be used for this application',
-            'job_description': 'The full job description from the posting'
+            'name': 'Enter a descriptive name for your deck',
+            'description': 'Enter a description for your deck',
+            'content': 'Enter the text content that will be used to generate flashcards',
         } 
+
+class DocumentForm(forms.ModelForm):
+    file = forms.FileField(required=False, widget=forms.FileInput(attrs={
+        'class': 'form-control',
+        'accept': '.pdf,.doc,.docx,.txt'
+    }))
+
+    class Meta:
+        model = Document
+        fields = ['name', 'content']
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Enter a name for this document'
+            }),
+            'content': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 10,
+                'placeholder': 'Enter or paste the document content here'
+            }),
+        }
+        labels = {
+            'name': 'Document Name',
+            'content': 'Content',
+        }
+        help_texts = {
+            'name': 'A descriptive name for this document',
+            'content': 'The text content that will be used for AI processing'
+        }

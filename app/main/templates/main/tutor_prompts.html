@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+{% load main_extras %}
+
+{% block content %}
+<div class="container-fluid h-100 p-0">
+    <!-- Mobile Navigation -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="navOffcanvas">
+        <div class="offcanvas-header">
+            <div class="h5 mb-0">Menu</div>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+        </div>
+        <div class="offcanvas-body">
+            {% include 'main/_mobile_nav.html' %}
+        </div>
+    </div>
+
+    <div class="row h-100 g-0 px-3 pt-3">
+        <!-- Main Content Area -->
+        <div class="col-12 d-flex flex-column">
+            <div class="bg-white rounded border p-3 h-100">
+                <h1 class="display-6">Prompt Settings</h1>
+                <p class="text-muted mb-4">Empty fields will use their default values</p>
+                
+                <div class="row g-4" 
+    data-controller="prompt-override"
+    data-prompt-override-save-url-value="{% url 'main:update_prompt_override' url_path=tutor.url_path %}">
+                    {% for key in whitelist %}
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <label class="form-label fw-medium mb-0">
+                                            {{ key }}
+                                        </label>
+                                        <div class="save-indicator text-muted" style="display: none;">
+                                            <small><i class="bi bi-clock"></i> Saving...</small>
+                                        </div>
+                                    </div>
+                                    <textarea
+                                        data-key="{{ key }}"
+                                        data-prompt-override-target="textarea"
+                                        data-action="focus->prompt-override#focusTextarea input->prompt-override#inputTextarea blur->prompt-override#blurTextarea"
+                                        class="prompt-override form-control"
+                                        rows="4"
+                                        placeholder="{{ defaults|get_item:key }}"
+                                    >{{ overrides|get_item:key|default:'' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+{% endblock %}
