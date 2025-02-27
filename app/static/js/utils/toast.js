@@ -23,10 +23,10 @@ export function showToast(message, type = 'success') {
                 type === 'warning' ? 'exclamation-circle' : 'info-circle'
 
     toast.innerHTML = `
-        <div class="toast align-items-center text-white bg-${bootstrapType} border-0" 
+        <div class="toast align-items-center text-white bg-${bootstrapType} border-0 fade show" 
              role="alert" aria-live="assertive" aria-atomic="true">
             <div class="d-flex">
-                <div class="toast-body">
+                <div class="toast-body text-white">
                     <i class="bi bi-${icon} me-2"></i>${message}
                 </div>
                 <button type="button" class="btn-close btn-close-white me-2 m-auto" 

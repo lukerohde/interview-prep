@@ -2,45 +2,63 @@
 
 {% load allauth i18n %}
 {% block head_title %}
-    {% trans "Signup" %}
+    {% trans "Sign Up" %}
 {% endblock head_title %}
 {% block content %}
-    {% element h1 %}
-        {% trans "Sign Up" %}
-    {% endelement %}
-    {% setvar link %}
-        <a href="{{ login_url }}">
-        {% endsetvar %}
-        {% setvar end_link %}
-        </a>
-    {% endsetvar %}
-    {% element p %}
-        {% blocktranslate %}Already have an account? Then please {{ link }}sign in{{ end_link }}.{% endblocktranslate %}
-    {% endelement %}
-    {% if not SOCIALACCOUNT_ONLY %}
-        {% url 'account_signup' as action_url %}
-        {% element form form=form method="post" action=action_url tags="entrance,signup" %}
-            {% slot body %}
-                {% csrf_token %}
-                {% element fields form=form unlabeled=True %}
-                {% endelement %}
-                {{ redirect_field }}
-            {% endslot %}
-            {% slot actions %}
-                {% element button tags="prominent,signup" type="submit" %}
-                    {% trans "Sign Up" %}
-                {% endelement %}
-            {% endslot %}
-        {% endelement %}
-    {% endif %}
-    {% if PASSKEY_SIGNUP_ENABLED %}
-        {% element hr %}
-        {% endelement %}
-        {% element button href=signup_by_passkey_url tags="prominent,signup,outline,primary" %}
-            {% trans "Sign up using a passkey" %}
-        {% endelement %}
-    {% endif %}
-    {% if SOCIALACCOUNT_ENABLED %}
-        {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
-    {% endif %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-5">
+            <div class="card shadow auth-card">
+                <div class="card-header gradient-heading text-center">
+                    <h3 class="mb-0">{% trans "Sign In or Sign Up" %}</h3>
+                </div>
+                <div class="card-body p-4">
+                    {% if not SOCIALACCOUNT_ONLY %}
+                        {% url 'account_signup' as action_url %}
+                        <form method="post" action="{{ action_url }}">
+                            {% csrf_token %}
+                            
+                            <div class="form-group mb-3">
+                                <input type="text" name="username" placeholder="Username" required id="id_username" class="form-control" aria-label="Username">
+                            </div>
+                            
+                            <div class="form-group mb-3">
+                                <input type="email" name="email" placeholder="Email" required id="id_email" class="form-control" aria-label="Email">
+                            </div>
+                            
+                            <div class="form-group mb-3">
+                                <input type="password" name="password1" placeholder="Password" required id="id_password1" class="form-control" aria-label="Password">
+                            </div>
+                            
+                            <div class="form-group mb-4">
+                                <input type="password" name="password2" placeholder="Confirm Password" required id="id_password2" class="form-control" aria-label="Confirm Password">
+                            </div>
+                            
+                            {{ redirect_field }}
+                            
+                            <div class="d-grid mb-3">
+                                <button type="submit" class="btn btn-primary py-2">{% trans "Let's Go" %}</button>
+                            </div>
+                            
+                            <div class="text-center">
+                                <a href="{{ login_url }}" class="small">{% trans "Already have an account? Sign in" %}</a>
+                            </div>
+                        </form>
+                    {% endif %}
+                    
+                    {% if PASSKEY_SIGNUP_ENABLED %}
+                        <hr class="my-4">
+                        <div class="d-grid">
+                            <a href="{{ signup_by_passkey_url }}" class="btn btn-outline-primary py-2">{% trans "Sign up using a passkey" %}</a>
+                        </div>
+                    {% endif %}
+                    
+                    {% if SOCIALACCOUNT_ENABLED %}
+                        {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock content %}

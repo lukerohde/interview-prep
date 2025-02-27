@@ -13,8 +13,8 @@
           <p class="mb-0">Your changes have not been saved. Please try again or contact support if the issue persists.</p>
         </div>
         {% endif %}
-        <div class="card-header bg-primary bg-gradient text-white py-3">
-          <h1 class="card-title h3 mb-0">{% if deck %}Edit{% else %}Create{% endif %} {{ tutor.deck_name }}</h1>
+        <div class="card-header gradient-heading text-center">
+          <h3 class="mb-0">{% if deck %}Edit{% else %}Create{% endif %} {{ tutor.deck_name }}</h3>
         </div>
         <div class="card-body p-4">
           <form method="post">
@@ -55,7 +55,7 @@
               <a href="{% url 'main:deck_list' url_path=tutor.url_path %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left me-2"></i>Back to {{ tutor.deck_name_plural }}
               </a>
-              <button type="submit" class="btn btn-primary">
+              <button type="submit" class="btn btn-primary gradient-button">
                 <i class="bi bi-save me-2"></i>Save {{ tutor.deck_name }}
               </button>
             </div>

@@ -8,65 +8,52 @@
 {% block content %}
 <div class="container">
     <div class="row justify-content-center mt-5">
-        <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white text-center py-3">
+        <div class="col-md-5">
+            <div class="card shadow auth-card">
+                <div class="card-header gradient-heading text-center">
                     <h3 class="mb-0">{% trans "Sign In or Sign Up" %}</h3>
                 </div>
                 <div class="card-body p-4">
-                    {% if not SOCIALACCOUNT_ONLY %}
-                        {% if user.is_authenticated %}
-                            <div class="alert alert-info text-center">
-                                <p class="mb-0">
-                                    {% url 'account_logout' as logout_url %}
-                                    {% blocktranslate %}You are already signed in as {{ user.email }}.{% endblocktranslate %}
-                                    <a href="{{ logout_url }}" class="alert-link">{% trans "Sign Out" %}</a>
-                                </p>
-                            </div>
-                        {% else %}
-                            <p class="text-center text-muted mb-4">
-                                {% trans "Enter your email and password to sign in. If you don't have an account yet, entering your email and password will create one for you automatically." %}
-                            </p>
+                    {% if user.is_authenticated %}
+                        <div class="alert alert-info text-center mb-0">
+                            {% url 'account_logout' as logout_url %}
+                            {% blocktranslate %}Already signed in as {{ user.email }}{% endblocktranslate %}
+                            <a href="{{ logout_url }}" class="alert-link">{% trans "Sign Out" %}</a>
+                        </div>
+                    {% else %}
+                        {% url 'account_login' as login_url %}
+                        <form method="post" action="{{ login_url }}" class="login">
+                            {% csrf_token %}
                             
-                            {% url 'account_login' as login_url %}
-                            <form method="post" action="{{ login_url }}" class="login">
-                                {% csrf_token %}
-                                
-                                <div class="form-group mb-3">
-                                    <label for="id_login" class="form-label">{% trans "Email" %}</label>
-                                    <input type="email" name="login" value="{{ request.GET.email|default:'' }}" placeholder="{% trans 'Email address' %}" autocomplete="email" required id="id_login" class="form-control">
-                                </div>
-                                
-                                <div class="form-group mb-3">
-                                    <label for="id_password" class="form-label">{% trans "Password" %}</label>
-                                    <input type="password" name="password" placeholder="{% trans 'Password' %}" autocomplete="current-password" required id="id_password" class="form-control">
-                                </div>
-                                
-                                <div class="form-group mb-3">
-                                    <div class="form-check">
-                                        <input type="checkbox" name="remember" id="id_remember" class="form-check-input" checked>
-                                        <label for="id_remember" class="form-check-label">{% trans "Remember Me" %}</label>
-                                    </div>
-                                </div>
-                                
-                                {{ redirect_field }}
-                                
-                                <div class="d-grid gap-2">
-                                    <button class="btn btn-primary" type="submit">{% trans "Sign In" %}</button>
-                                </div>
-                            </form>
-                            
-                            <div class="text-center mt-4">
-                                <a href="{% url 'account_reset_password' %}" class="text-decoration-none">{% trans "Forgot Password?" %}</a>
+                            <div class="form-group mb-3">
+                                <input type="email" name="login" value="{{ request.GET.email|default:'' }}" placeholder="Email" autocomplete="email" required id="id_login" class="form-control" aria-label="Email">
                             </div>
-                        {% endif %}
+                            
+                            <div class="form-group mb-4">
+                                <input type="password" name="password" placeholder="Password" autocomplete="current-password" required id="id_password" class="form-control" aria-label="Password">
+                                <div class="form-text">{% trans "New users will be registered automatically" %}</div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div class="form-check">
+                                    <input type="checkbox" name="remember" id="id_remember" class="form-check-input">
+                                    <label for="id_remember" class="form-check-label small">{% trans "Remember Me" %}</label>
+                                </div>
+                                <a href="{% url 'account_reset_password' %}" class="text-decoration-none small">{% trans "Forgot Password?" %}</a>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button class="btn btn-primary py-2 gradient-button" type="submit">{% trans "Let's Go" %}</button>
+                            </div>
+                            
+                            {% if redirect_field_value %}
+                                <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+                            {% endif %}
+                        </form>
                     {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock content %}
-{% block extra_body %}
-    {{ block.super }}
 {% endblock %}

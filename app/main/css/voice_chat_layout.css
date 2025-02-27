@@ -2,18 +2,67 @@
 .transcript-container {
     display: flex;
     flex-direction: column;
-    padding: 1rem;
+    padding: 1.25rem;
     height: calc(100vh - 350px);
     overflow-y: auto;
-    transition: height 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+    background: linear-gradient(135deg, rgba(249, 249, 249, 0.5) 0%, rgba(245, 245, 250, 0.5) 100%);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+}
+
+/* Add a subtle neural network pattern to the transcript container */
+.transcript-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(93, 95, 239, 0.02) 0%, transparent 8%),
+        radial-gradient(circle at 90% 30%, rgba(157, 78, 221, 0.02) 0%, transparent 8%),
+        radial-gradient(circle at 30% 70%, rgba(93, 95, 239, 0.02) 0%, transparent 8%),
+        radial-gradient(circle at 70% 80%, rgba(157, 78, 221, 0.02) 0%, transparent 8%);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.7;
 }
 
 /* Review Area */
 .review-area {
-    background: var(--bs-white);
-    border: 1px solid var(--bs-border-color);
-    border-radius: 0.375rem;
-    margin-bottom: 1rem;
+    background: white;
+    border: none;
+    border-radius: 12px;
+    margin-bottom: 1.25rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    padding: 1.25rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.review-area:hover {
+    box-shadow: 0 6px 24px rgba(93, 95, 239, 0.1);
+    transform: translateY(-2px);
+}
+
+/* Add a subtle tech pattern to the review area */
+.review-area::before {
+    content: "";
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    width: 60px;
+    height: 60px;
+    background-image: 
+        linear-gradient(to right, rgba(93, 95, 239, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(93, 95, 239, 0.05) 1px, transparent 1px);
+    background-size: 10px 10px;
+    border-radius: 0 0 8px 0;
+    opacity: 0.5;
+    z-index: 0;
 }
 
 /* When review area is visible, adjust transcript container */
@@ -26,6 +75,7 @@
     #sidebar, #deckSidebar {
         height: 100% !important;
         margin: 0;
+        transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     #sidebar .offcanvas-body,
@@ -38,16 +88,17 @@
     #deckSidebar .bg-white {
         height: 100%;
         margin-right: -0.75rem;
+        background: linear-gradient(180deg, white 0%, #f8f9fa 100%) !important;
+        box-shadow: 0 0 20px rgba(93, 95, 239, 0.05);
     }
 }
-
-
 
 /* Mobile Sidebar */
 @media (max-width: 768px) {
     #sidebar, #deckSidebar {
         width: 100%;
         max-width: 320px;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
     }
 
     .offcanvas-body {

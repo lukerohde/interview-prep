@@ -2,18 +2,13 @@
 
 {% block content %}
 <div class="container py-4">
-    <div class="row justify-content-between align-items-center mb-4">
-        <div class="col">
-            <h1 class="display-6 mb-0">
-                {% if document %}Edit Document{% else %}New Document{% endif %}
-            </h1>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-12">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
             <div class="card shadow-sm">
-                <div class="card-body">
+                <div class="card-header gradient-heading text-center">
+                    <h3 class="mb-0">{% if document %}Edit{% else %}Upload{% endif %} Document</h3>
+                </div>
+                <div class="card-body p-4">
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
                         
