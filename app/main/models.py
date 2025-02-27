@@ -228,10 +228,35 @@ class Deck(models.Model):
         return self.save_flashcards(cards)
 
 
-class ReviewStatus(str, Enum):
+class ReviewStatus(models.TextChoices):
     FORGOT = 'forgot'
     HARD = 'hard'
     EASY = 'easy'
+
+class Invitation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+    email = models.EmailField(unique=True, help_text='Email address of the invited user')
+    invited_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_invitations')
+    created_at = models.DateTimeField(auto_now_add=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    accepted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='received_invitation')
+    
+    def __str__(self):
+        return f"Invitation for {self.email}"
+    
+    @property
+    def is_accepted(self):
+        return self.accepted_at is not None
+    
+    def accept(self, user):
+        """Mark invitation as accepted by user"""
+        if not self.is_accepted:
+            self.accepted_at = timezone.now()
+            self.accepted_by = user
+            self.save()
+    
+    class Meta:
+        ordering = ['-created_at']
 
 class FlashCard(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)

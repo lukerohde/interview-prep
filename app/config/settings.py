@@ -159,8 +159,19 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 )
-ACCOUNT_EMAIL_VERIFICATION = "none"
-ACCOUNT_EMAIL_REQUIRED = False
+
+# django-allauth settings
+ACCOUNT_AUTHENTICATION_METHOD = 'email'  # Use email for authentication instead of username
+ACCOUNT_EMAIL_REQUIRED = True  # Email is required
+ACCOUNT_UNIQUE_EMAIL = True  # Email must be unique
+ACCOUNT_USERNAME_REQUIRED = True  # Django's User model requires a username
+ACCOUNT_EMAIL_VERIFICATION = "none"  # No email verification for now
+
+# Simplify login/signup flow
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True  # Auto-login after email confirmation
+ACCOUNT_LOGIN_ON_PASSWORD_RESET = True  # Auto-login after password reset
+ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE = False  # Only require password once during signup
+ACCOUNT_SESSION_REMEMBER = True  # Remember me option checked by default
 
 SITE_ID = 1
 

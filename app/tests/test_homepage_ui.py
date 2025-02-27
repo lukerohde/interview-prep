@@ -27,7 +27,7 @@ class TestHomePageUI(UITestBase, StaticLiveServerTestCase):
         self.wait_for_page_load(self.page)
         
         assert self.page.title() == deck.tutor.title
-        name = self.page.locator("h1.display-6")
+        name = self.page.locator("h1.gradient-text")
         assert name.is_visible()
         assert name.text_content().strip() == deck.tutor.deck_name_plural
         

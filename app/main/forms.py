@@ -66,3 +66,13 @@ class DocumentForm(forms.ModelForm):
             'name': 'A descriptive name for this document',
             'content': 'The text content that will be used for AI processing'
         }
+
+class InvitationForm(forms.Form):
+    email = forms.EmailField(
+        label='Email Address',
+        widget=forms.EmailInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Enter email address to invite'
+        }),
+        help_text='Enter the email address of the person you want to invite'
+    )

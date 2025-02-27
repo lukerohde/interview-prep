@@ -5,6 +5,7 @@ from .views import voice_chat_views
 from .views import flashcard_views
 from .views import document_views
 from .views import tutor_views
+from .views import user_views
 
 app_name = 'main'
 
@@ -40,6 +41,11 @@ view_patterns = [
         path('decks/<uuid:pk>/', deck_views.deck_detail, name='deck_detail'),
         path('decks/<uuid:pk>/edit/', deck_views.deck_edit, name='deck_edit'),
         path('decks/<uuid:pk>/delete/', deck_views.deck_delete, name='deck_delete'),
+    ])),
+    path('invitations/', include([
+        path('', user_views.list_invitations, name='invitation_list'),
+        path('invite/', user_views.invite_user, name='invitation_form'),
+        path('<uuid:invitation_id>/delete/', user_views.delete_invitation, name='invitation_delete'),
     ])),
 ]
 

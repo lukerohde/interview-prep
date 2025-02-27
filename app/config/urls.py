@@ -18,13 +18,25 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from config.account_adapter import MergedLoginSignupView
+
+def merged_login_signup(request):
+    """Function-based view that handles both login and signup"""
+    view = MergedLoginSignupView(request)
+    return view.process()
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    
+    # Custom merged login/signup view - handles both login and signup
+    path('accounts/login/', merged_login_signup, name='account_login'),
+    path('accounts/signup/', merged_login_signup, name='account_signup'),
+    
+    # Other allauth URLs
     path('accounts/', include('allauth.urls')),
-    path('', include('main.urls')),  # Assuming 'main' is the app for core functionality
+    
+    path('', include('main.urls')),
 ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    

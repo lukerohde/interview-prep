@@ -5,22 +5,29 @@
     {% trans "Sign Out" %}
 {% endblock head_title %}
 {% block content %}
-    {% element h1 %}
-        {% trans "Sign Out" %}
-    {% endelement %}
-    {% element p %}
-        {% trans 'Are you sure you want to sign out?' %}
-    {% endelement %}
-    {% url 'account_logout' as action_url %}
-    {% element form method="post" action=action_url no_visible_fields=True %}
-        {% slot body %}
-            {% csrf_token %}
-            {{ redirect_field }}
-        {% endslot %}
-        {% slot actions %}
-            {% element button type="submit" %}
-                {% trans 'Sign Out' %}
-            {% endelement %}
-        {% endslot %}
-    {% endelement %}
-{% endblock content %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-5">
+            <div class="card shadow auth-card">
+                <div class="card-header gradient-heading text-center">
+                    <h3 class="mb-0">{% trans "Sign Out" %}</h3>
+                </div>
+                <div class="card-body p-4">
+                    <p class="text-center mb-4">{% trans 'Are you sure you want to sign out?' %}</p>
+                    
+                    {% url 'account_logout' as action_url %}
+                    <form method="post" action="{{ action_url }}">
+                        {% csrf_token %}
+                        {{ redirect_field }}
+                        
+                        <div class="d-flex justify-content-center">
+                            <button type="submit" class="btn btn-primary gradient-button px-4">{% trans 'Yes, Sign Out' %}</button>
+                            <a href="/" class="btn btn-outline-secondary ms-3">{% trans 'Cancel' %}</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

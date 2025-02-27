@@ -164,7 +164,7 @@ class TestFlashcardUI(UITestBase, StaticLiveServerTestCase):
         # Create a user and deck
         user = UserFactory()
         deck = DeckFactory(owner=user)
-        
+    
         # Create a flashcard with some initial tags
         flashcard = FlashcardFactory(
             user=user,
@@ -173,38 +173,38 @@ class TestFlashcardUI(UITestBase, StaticLiveServerTestCase):
             tags=["python", "django"]
         )
         flashcard.decks.add(deck)
-        
+    
         # Setup the user session and navigate to the deck detail page
         self.setup_user_session(self.page, user)
         self.page.goto(f"{self.live_server.url}{reverse('main:deck_detail', kwargs={'pk': deck.pk, 'url_path': deck.tutor.url_path})}")
         self.wait_for_page_load(self.page)
-        
+    
         # Find and click the edit button on the flashcard
         edit_button = self.page.locator(".flashcard-preview button[data-action='flashcard#editCard']")
         edit_button.click()
         
         # Get the card ID we're editing
         card_id = self.page.locator(".flashcard-preview").get_attribute("data-flashcard-id")
-        
+    
         # Wait for modal to be visible and form elements to be loaded
         modal = self.page.locator("#editFlashcardModal")
         modal.wait_for(state="visible")
-        
+    
         # Fill in the form
         front_textarea = self.page.locator("#editFlashcardFront")
         back_textarea = self.page.locator("#editFlashcardBack")
         tags_input = self.page.locator("#editFlashcardTags")
-        
+    
         # Verify initial values
         assert front_textarea.input_value() == "Initial front"
         assert back_textarea.input_value() == "Initial back"
         assert tags_input.input_value() == "python,django"
-        
+    
         # Update the values
         front_textarea.fill("Updated front")
         back_textarea.fill("Updated back")
         tags_input.fill("python,algorithms,data-structures")
-        
+    
         # Click save and wait for modal to be hidden (indicating successful save)
         save_button = self.page.locator("button[data-action='flashcard#saveEdit']")
         save_button.click()
@@ -223,4 +223,3 @@ class TestFlashcardUI(UITestBase, StaticLiveServerTestCase):
         tags = updated_card.locator(".flashcard-tags .badge")
         tag_texts = [tag.text_content() for tag in tags.all()]
         assert set(tag_texts) == {"python", "algorithms", "data-structures"}
-        
