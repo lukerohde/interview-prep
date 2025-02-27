@@ -6,8 +6,8 @@
 }
 
 .voice-button {
-  width: 64px;
-  height: 64px;
+  width: 128px;
+  height: 128px;
   border-radius: 50%;
   padding: 0;
   display: flex;
@@ -18,7 +18,7 @@
   border: none;
   background: white;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(93, 95, 239, 0.15);
+  box-shadow: 0 8px 24px rgba(93, 95, 239, 0.15), 0 12px 36px rgba(93, 95, 239, 0.1);
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -26,108 +26,118 @@
   overflow: hidden;
 }
 
-/* Add a subtle tech pattern to the voice button */
-.voice-button::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: 
-    radial-gradient(circle at 30% 30%, rgba(93, 95, 239, 0.05) 0%, transparent 50%),
-    radial-gradient(circle at 70% 70%, rgba(157, 78, 221, 0.05) 0%, transparent 50%);
-  opacity: 0.8;
-  z-index: 0;
-}
-
-.voice-button::after {
-  content: "";
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
-  opacity: 0;
-  transform: scale(0.5);
-  transition: transform 0.5s ease-out, opacity 0.5s ease-out;
-}
-
-.voice-button:active::after {
-  opacity: 0.3;
-  transform: scale(1);
-  transition: 0s;
-}
-
-.voice-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(93, 95, 239, 0.25);
-}
-
-.voice-button:active {
-  transform: translateY(1px);
-  box-shadow: 0 2px 8px rgba(93, 95, 239, 0.15);
+.voice-button:active, 
+.voice-button.active {
+  transform: translateY(2px);
+  box-shadow: 0 4px 12px rgba(93, 95, 239, 0.15);
 }
 
 .voice-button i {
-  font-size: 1.5rem;
+  font-size: 3rem;
   position: relative;
   transition: all 0.15s ease;
   z-index: 1;
 }
 
+/* Set default icon */
+.voice-button i::before {
+  content: "\F5BC"; /* bi-telephone-outbound */
+}
+
+/* Active state (unmuted) */
+.voice-button.active {
+  background: linear-gradient(135deg, #1e8e3e 0%, #34a853 100%) !important;
+  animation: listening-pulse 1.5s infinite;
+  transform: translateY(2px);
+  box-shadow: 0 4px 12px rgba(93, 95, 239, 0.15);
+}
+
+.voice-button.active i {
+  color: white !important;
+}
+
+/* Override Bootstrap icon styles for active state */
+.voice-button.active .bi-mic-mute::before {
+  content: "\F490" !important; /* bi-mic */
+}
+
+/* Make sure the mic icon is displayed correctly */
+.bi-mic::before {
+  content: "\F490" !important; /* bi-mic */
+}
+
+.bi-mic-mute::before {
+  content: "\F48F" !important; /* bi-mic-mute */
+}
+
 /* Button States */
 .voice-button[data-state="disconnected"] {
   background: linear-gradient(135deg, white 0%, #f8f9fa 100%);
+  border: 1px solid rgba(93, 95, 239, 0.2);
 }
 
-.voice-button[data-state="disconnected"] i,
-.voice-button[data-state="error"] i {
+.voice-button[data-state="disconnected"] i {
   color: var(--danger-color);
+}
+
+.voice-button[data-state="disconnected"] i::before {
+  content: "\F5BE"; /* bi-telephone-x */
 }
 
 .voice-button[data-state="connecting"] {
   background: linear-gradient(135deg, #fff8e1 0%, #fffde7 100%);
+  border: 1px solid rgba(246, 173, 85, 0.4);
   animation: pulse 1.5s infinite;
 }
 
 .voice-button[data-state="connecting"] i {
-  /* Switch icon to telephone-outbound when connecting */
-  &::before {
-    content: "\F5BC"; /* bi-telephone-outbound */
-  }
   color: var(--warning-color);
+}
+
+.voice-button[data-state="connecting"] i::before {
+  content: "\F5BC"; /* bi-telephone-outbound */
 }
 
 .voice-button[data-state="connected"] {
   background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+  border: 1px solid rgba(52, 168, 83, 0.3);
 }
 
 .voice-button[data-state="connected"] i {
-  /* Switch icon to mic-mute when connected/muted */
-  &::before {
-    content: "\F48F"; /* bi-mic-mute */
-  }
   color: var(--success-color);
 }
 
+.voice-button[data-state="connected"] i::before {
+  content: "\F48F"; /* bi-mic-mute */
+}
+
 .voice-button[data-state="listening"] {
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--tertiary-color) 100%);
+  background: linear-gradient(135deg, #1e8e3e 0%, #34a853 100%) !important;
   animation: listening-pulse 1.5s infinite;
+  transform: translateY(2px);
+  box-shadow: 0 4px 12px rgba(93, 95, 239, 0.15);
 }
 
 .voice-button[data-state="listening"] i {
-  /* Switch icon to mic when listening */
-  &::before {
-    content: "\F490"; /* bi-mic */
-  }
-  color: white;
+  color: white !important;
+}
+
+.voice-button[data-state="listening"] i::before {
+  content: "\F490" !important; /* bi-mic */
 }
 
 .voice-button[data-state="error"] {
   background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
   animation: error-shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+  border: 1px solid rgba(234, 67, 53, 0.4);
+}
+
+.voice-button[data-state="error"] i {
+  color: var(--danger-color);
+}
+
+.voice-button[data-state="error"] i::before {
+  content: "\F5BE"; /* bi-telephone-x */
 }
 
 /* Animations */
@@ -136,7 +146,7 @@
     box-shadow: 0 0 0 0 rgba(246, 173, 85, 0.4);
   }
   70% {
-    box-shadow: 0 0 0 10px rgba(246, 173, 85, 0);
+    box-shadow: 0 0 0 20px rgba(246, 173, 85, 0);
   }
   100% {
     box-shadow: 0 0 0 0 rgba(246, 173, 85, 0);
@@ -145,28 +155,28 @@
 
 @keyframes listening-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(93, 95, 239, 0.4);
+    box-shadow: 0 0 0 0 rgba(52, 168, 83, 0.4);
   }
   70% {
-    box-shadow: 0 0 0 10px rgba(93, 95, 239, 0);
+    box-shadow: 0 0 0 20px rgba(52, 168, 83, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(93, 95, 239, 0);
+    box-shadow: 0 0 0 0 rgba(52, 168, 83, 0);
   }
 }
 
 @keyframes error-shake {
   10%, 90% {
-    transform: translateX(-1px);
+    transform: translateX(-2px);
   }
   20%, 80% {
-    transform: translateX(2px);
+    transform: translateX(4px);
   }
   30%, 50%, 70% {
-    transform: translateX(-3px);
+    transform: translateX(-6px);
   }
   40%, 60% {
-    transform: translateX(3px);
+    transform: translateX(6px);
   }
 }
 
