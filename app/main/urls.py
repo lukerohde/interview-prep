@@ -43,9 +43,9 @@ view_patterns = [
         path('decks/<uuid:pk>/delete/', deck_views.deck_delete, name='deck_delete'),
     ])),
     path('invitations/', include([
-        path('', user_views.list_invitations, name='list_invitations'),
-        path('invite/', user_views.invite_user, name='invite_user'),
-        path('<uuid:invitation_id>/delete/', user_views.delete_invitation, name='delete_invitation'),
+        path('', user_views.list_invitations, name='invitation_list'),
+        path('invite/', user_views.invite_user, name='invitation_form'),
+        path('<uuid:invitation_id>/delete/', user_views.delete_invitation, name='invitation_delete'),
     ])),
 ]
 

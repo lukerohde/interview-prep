@@ -22,7 +22,7 @@
     
     {% if user.is_staff %}
     <a class="text-decoration-none text-dark px-3 py-2 {% if 'invitations' in request.path %}fw-bold{% endif %}" 
-       href="{% url 'main:list_invitations' %}">
+       href="{% url 'main:invitation_list' %}">
         <i class="bi bi-envelope me-2"></i>
         <span>Manage Invitations</span>
     </a>

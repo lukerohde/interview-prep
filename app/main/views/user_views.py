@@ -45,7 +45,7 @@ def invite_user(request):
     else:
         form = InvitationForm()
         
-    return render(request, 'main/invite_user.html', {
+    return render(request, 'main/invitation_form.html', {
         'form': form,
         'invitation': invitation,
         'invite_url': invite_url
@@ -61,7 +61,7 @@ def list_invitations(request):
     for invitation in invitations:
         invitation.invite_url = request.build_absolute_uri(reverse('account_login') + f"?invitation_id={invitation.id}")
         
-    return render(request, 'main/list_invitations.html', {'invitations': invitations})
+    return render(request, 'main/invitation_list.html', {'invitations': invitations})
 
 @login_required
 @user_passes_test(is_admin)
@@ -83,5 +83,7 @@ def delete_invitation(request, invitation_id):
         # Delete the invitation
         invitation.delete()
         messages.success(request, f"Invitation for {email} has been deleted.")
-        
-    return redirect('main:list_invitations')
+        return redirect('main:invitation_list')
+    else:
+        # Instead of rendering a template, just redirect to the list
+        return redirect('main:invitation_list')

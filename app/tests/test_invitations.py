@@ -63,27 +63,27 @@ def test_invitation_accept_method():
 def test_invite_user_view_admin_access(admin_client):
     """Test that admins can access the invite user view"""
     client, _ = admin_client
-    response = client.get(reverse('main:invite_user'))
+    response = client.get(reverse('main:invitation_form'))
     assert response.status_code == 200
     assert 'form' in response.context
 
 def test_invite_user_view_regular_user_access(regular_client):
     """Test that regular users cannot access the invite user view"""
     client, _ = regular_client
-    response = client.get(reverse('main:invite_user'))
+    response = client.get(reverse('main:invitation_form'))
     assert response.status_code == 302  # Should redirect
 
 def test_list_invitations_view_admin_access(admin_client):
     """Test that admins can access the list invitations view"""
     client, _ = admin_client
-    response = client.get(reverse('main:list_invitations'))
+    response = client.get(reverse('main:invitation_list'))
     assert response.status_code == 200
     assert 'invitations' in response.context
 
 def test_list_invitations_view_regular_user_access(regular_client):
     """Test that regular users cannot access the list invitations view"""
     client, _ = regular_client
-    response = client.get(reverse('main:list_invitations'))
+    response = client.get(reverse('main:invitation_list'))
     assert response.status_code == 302  # Should redirect
 
 def test_create_invitation(admin_client):
@@ -91,7 +91,7 @@ def test_create_invitation(admin_client):
     client, admin = admin_client
     email = "newinvite@example.com"
     
-    response = client.post(reverse('main:invite_user'), {'email': email})
+    response = client.post(reverse('main:invitation_form'), {'email': email})
     assert response.status_code == 200
     
     # Check that the invitation was created
@@ -108,7 +108,7 @@ def test_delete_invitation(admin_client, invitation):
     invitation_id = invitation.id
     
     # Delete the invitation
-    response = client.post(reverse('main:delete_invitation', args=[invitation_id]))
+    response = client.post(reverse('main:invitation_delete', args=[invitation_id]))
     assert response.status_code == 302  # Should redirect
     
     # Check that the invitation was deleted
@@ -124,7 +124,7 @@ def test_delete_accepted_invitation_disables_user(admin_client):
     invitation.accept(user)
     
     # Delete the invitation
-    response = client.post(reverse('main:delete_invitation', args=[invitation.id]))
+    response = client.post(reverse('main:invitation_delete', args=[invitation.id]))
     assert response.status_code == 302  # Should redirect
     
     # Check that the user was disabled

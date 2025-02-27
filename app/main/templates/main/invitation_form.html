@@ -12,9 +12,6 @@
                     <h3 class="mb-0">Invite New User</h3>
                 </div>
                 <div class="card-body">
-                    <p class="card-text">
-                        Invite a new user to join the platform. They will receive an invitation link that allows them to create an account.
-                    </p>
                     
                     {% if messages %}
                     <div class="messages mb-4">
@@ -45,7 +42,7 @@
                     </div>
                     {% endif %}
                     
-                    <form method="post" action="{% url 'main:invite_user' %}">
+                    <form method="post" action="{% url 'main:invitation_form' %}">
                         {% csrf_token %}
                         
                         <div class="mb-3">
@@ -65,7 +62,7 @@
                         
                         <div class="d-grid gap-2">
                             <button type="submit" class="btn btn-primary">Generate Invitation</button>
-                            <a href="{% url 'main:list_invitations' %}" class="btn btn-outline-secondary">View All Invitations</a>
+                            <a href="{% url 'main:invitation_list' %}" class="btn btn-outline-secondary">View All Invitations</a>
                         </div>
                     </form>
                 </div>
