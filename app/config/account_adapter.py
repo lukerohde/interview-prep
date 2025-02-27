@@ -10,6 +10,7 @@ from allauth.account import app_settings
 from allauth.exceptions import ImmediateHttpResponse
 import uuid
 from django import forms
+from main.models import Invitation
 
 class MergedLoginForm(LoginForm):
     """Custom login form that doesn't validate email existence"""
@@ -40,6 +41,17 @@ class MergedLoginSignupView:
         # If this is a signup page request, redirect to login page
         if self.request.path == '/accounts/signup/' and self.request.method == 'GET':
             return redirect('account_login')
+            
+        # Check if there's an invitation ID in the URL
+        invitation_id = self.request.GET.get('invitation_id')
+        if invitation_id and self.request.method == 'GET':
+            try:
+                # Look up the invitation
+                invitation = Invitation.objects.get(id=invitation_id, accepted_at=None)
+                # Pre-populate the email field
+                self.form.initial['login'] = invitation.email
+            except Invitation.DoesNotExist:
+                messages.error(self.request, "Invalid or already used invitation.")
             
         if self.request.method == 'POST' and self.form.is_valid():
             email = self.form.cleaned_data.get('login')
@@ -88,6 +100,27 @@ class MergedLoginSignupView:
     def _handle_signup(self, email, password):
         """Create a new user account"""
         try:
+            # Check if there's an invitation for this email
+            invitation = None
+            
+            # First check if there's an invitation ID in the URL
+            invitation_id = self.request.GET.get('invitation_id')
+            if invitation_id:
+                try:
+                    invitation = Invitation.objects.get(id=invitation_id, email__iexact=email, accepted_at=None)
+                except Invitation.DoesNotExist:
+                    pass
+            
+            # If no invitation found by ID, look up by email
+            if not invitation:
+                invitation = Invitation.objects.filter(email__iexact=email, accepted_at=None).first()
+            
+            if not invitation:
+                # No invitation found, show error message
+                self.form.add_error(None, "You need an invitation to sign up. Please contact an administrator.")
+                messages.error(self.request, "You need an invitation to sign up. Please contact an administrator.")
+                return render(self.request, 'account/login.html', {'form': self.form})
+            
             # Create a new user
             user = User()
             user_email(user, email)
@@ -100,12 +133,20 @@ class MergedLoginSignupView:
             user.set_password(password)
             user.save()
             
+            # Mark invitation as accepted
+            invitation.accept(user)
+            
             # Log the user in
-            return perform_login(
-                self.request, user,
-                redirect_url=settings.LOGIN_REDIRECT_URL
-            )
+            try:
+                return perform_login(
+                    self.request, user,
+                    redirect_url=settings.LOGIN_REDIRECT_URL
+                )
+            except ImmediateHttpResponse as e:
+                return e.response
         except Exception as e:
+            # Handle any errors during signup
+            self.form.add_error(None, f"Error creating account: {str(e)}")
             messages.error(self.request, f"Error creating account: {str(e)}")
             return render(self.request, 'account/login.html', {'form': self.form})
 
@@ -113,7 +154,13 @@ class MergedLoginSignupView:
 class InviteOnlyAccountAdapter(DefaultAccountAdapter):
 
     def is_open_for_signup(self, request):
-        return True  # Allow anyone to sign up, will implement invitation system later
+        # Only allow signup if the email has an invitation
+        if request and request.method == 'POST':
+            email = request.POST.get('email')
+            if email:
+                # Check if there's an invitation for this email
+                return Invitation.objects.filter(email__iexact=email, accepted_at=None).exists()
+        return False  # Closed for signup by default
         
     def get_signup_redirect_url(self, request):
         return super().get_signup_redirect_url(request)

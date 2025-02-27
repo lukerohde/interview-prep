@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Invite New User{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header gradient-heading text-center">
+                    <h3 class="mb-0">Invite New User</h3>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Invite a new user to join the platform. They will receive an invitation link that allows them to create an account.
+                    </p>
+                    
+                    {% if messages %}
+                    <div class="messages mb-4">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if invitation %}
+                    <div class="mb-4">
+                        <h5>Invitation Link for {{ invitation.email }}</h5>
+                        <p class="text-muted">Share this link with the user:</p>
+                        
+                        <div class="input-group mb-3">
+                            <input type="text" id="inviteUrl" class="form-control" value="{{ invite_url }}" readonly>
+                            <button class="btn btn-outline-primary" type="button" id="copyButton" onclick="copyInviteUrl()">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                        </div>
+                        
+                        <div id="copyMessage" class="alert alert-success d-none">
+                            Link copied to clipboard!
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post" action="{% url 'main:invite_user' %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
+                            {{ form.email }}
+                            {% if form.email.help_text %}
+                            <div class="form-text">{{ form.email.help_text }}</div>
+                            {% endif %}
+                            {% if form.email.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.email.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Generate Invitation</button>
+                            <a href="{% url 'main:list_invitations' %}" class="btn btn-outline-secondary">View All Invitations</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyInviteUrl() {
+    var copyText = document.getElementById("inviteUrl");
+    copyText.select();
+    copyText.setSelectionRange(0, 99999); /* For mobile devices */
+    navigator.clipboard.writeText(copyText.value);
+    
+    // Show copy message
+    var copyMessage = document.getElementById("copyMessage");
+    copyMessage.classList.remove("d-none");
+    
+    // Hide message after 3 seconds
+    setTimeout(function() {
+        copyMessage.classList.add("d-none");
+    }, 3000);
+}
+</script>
+{% endblock %}

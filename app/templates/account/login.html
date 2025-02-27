@@ -3,7 +3,11 @@
 {% load i18n %}
 {% load allauth account %}
 {% block head_title %}
-    {% trans "Sign In or Sign Up" %}
+    {% if request.GET.invitation_id %}
+        {% trans "Accept Invitation" %}
+    {% else %}
+        {% trans "Sign In or Sign Up" %}
+    {% endif %}
 {% endblock head_title %}
 {% block content %}
 <div class="container">
@@ -11,7 +15,11 @@
         <div class="col-md-5">
             <div class="card shadow auth-card">
                 <div class="card-header gradient-heading text-center">
-                    <h3 class="mb-0">{% trans "Sign In or Sign Up" %}</h3>
+                    {% if request.GET.invitation_id %}
+                        <h3 class="mb-0">{% trans "Accept Invitation" %}</h3>
+                    {% else %}
+                        <h3 class="mb-0">{% trans "Sign In or Sign Up" %}</h3>
+                    {% endif %}
                 </div>
                 <div class="card-body p-4">
                     {% if user.is_authenticated %}
@@ -31,7 +39,11 @@
                             
                             <div class="form-group mb-4">
                                 <input type="password" name="password" placeholder="Password" autocomplete="current-password" required id="id_password" class="form-control" aria-label="Password">
-                                <div class="form-text">{% trans "New users will be registered automatically" %}</div>
+                                {% if request.GET.invitation_id %}
+                                    <div class="form-text">{% trans "Create your password to accept the invitation" %}</div>
+                                {% else %}
+                                    <div class="form-text">{% trans "New users will be registered automatically" %}</div>
+                                {% endif %}
                             </div>
                             
                             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -42,8 +54,10 @@
                                 <a href="{% url 'account_reset_password' %}" class="text-decoration-none small">{% trans "Forgot Password?" %}</a>
                             </div>
                             
-                            <div class="d-grid">
-                                <button class="btn btn-primary py-2 gradient-button" type="submit">{% trans "Let's Go" %}</button>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="bi bi-box-arrow-in-right me-2"></i>{% trans "Let's Go!" %}
+                                </button>
                             </div>
                             
                             {% if redirect_field_value %}

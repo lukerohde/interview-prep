@@ -1,7 +1,7 @@
 # tests/factories.py
 import factory
 from django.contrib.auth.models import User
-from main.models import Deck, FlashCard, Tutor
+from main.models import Deck, FlashCard, Tutor, Invitation
 from django.utils import timezone
 
 class UserFactory(factory.django.DjangoModelFactory):
@@ -66,3 +66,14 @@ class FlashcardFactory(factory.django.DjangoModelFactory):
         if extracted:
             for deck in extracted:
                 self.decks.add(deck)
+        self.save()
+
+class InvitationFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Invitation
+    
+    email = factory.Sequence(lambda n: f"invited{n}@example.com")
+    invited_by = factory.SubFactory(UserFactory, is_staff=True)
+    created_at = factory.LazyFunction(timezone.now)
+    accepted_at = None
+    accepted_by = None

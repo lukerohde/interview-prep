@@ -171,12 +171,9 @@ def test_existing_user_login_integration(client, existing_user, login_url):
     assert user.username == 'testuser'
 
 def test_new_user_signup_integration(client, login_url):
-    """Test the complete signup flow for a new user"""
+    """Test that users cannot sign up without an invitation"""
     # Count users before
     user_count_before = User.objects.count()
-    
-    # Get the login page
-    response = client.get(login_url)
     
     # Submit the login form with new user credentials
     new_email = 'integration_test@example.com'
@@ -193,10 +190,10 @@ def test_new_user_signup_integration(client, login_url):
     except Exception as e:
         success = False
     
-    assert success, "Signup form submission failed"
+    assert success, "Form submission failed"
     
-    # Check that a new user was created
-    assert User.objects.count() > user_count_before
+    # Check that a new user was NOT created (since we require invitations now)
+    assert User.objects.count() == user_count_before
 
 def test_login_failure_integration(client, existing_user, login_url):
     """Test the login failure flow"""
