@@ -19,6 +19,15 @@
         <span>Configure Prompts</span>
     </a>
     {% endif %}
+    
+    {% if user.is_staff %}
+    <a class="text-decoration-none text-dark px-3 py-2 {% if 'invitations' in request.path %}fw-bold{% endif %}" 
+       href="{% url 'main:list_invitations' %}">
+        <i class="bi bi-envelope me-2"></i>
+        <span>Manage Invitations</span>
+    </a>
+    {% endif %}
+    
     <a class="text-decoration-none text-dark px-3 py-2"
        href="{% url 'account_logout' %}">
         <i class="bi bi-box-arrow-right me-2"></i> 
