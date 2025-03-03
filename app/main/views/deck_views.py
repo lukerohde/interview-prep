@@ -96,7 +96,8 @@ def deck_create(request, url_path):
     else:
         form = DeckForm()
     
-    return render(request, 'main/deck_form.html', {'form': form, 'tutor': request.tutor})
+    presenter = deck.tutor.presenter()
+    return render(request, 'main/deck_form.html', {'form': form, 'tutor': request.tutor, 'presenter': presenter})
 
 @login_required
 def deck_edit(request, url_path, pk):
@@ -135,7 +136,8 @@ def deck_edit(request, url_path, pk):
     else:
         form = DeckForm(instance=deck)
     
-    return render(request, 'main/deck_form.html', {'form': form, 'deck': deck, 'tutor': request.tutor})
+    presenter = deck.tutor.presenter()
+    return render(request, 'main/deck_form.html', {'form': form, 'deck': deck, 'tutor': request.tutor, 'presenter': presenter})
     
 @login_required
 def deck_delete(request, url_path, pk):

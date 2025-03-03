@@ -4,6 +4,8 @@ from django.utils import timezone
 from uuid import uuid4
 from enum import Enum
 import yaml
+
+from .presenters.interview_coach_presenter import InterviewCoachPresenter
 from .utils import do_something_handy
 from string import Template
 import json
@@ -71,6 +73,10 @@ class Tutor(models.Model):
                 
         return config
 
+    def presenter(self):
+        if self.name == "Interview Coach":
+            return InterviewCoachPresenter(self)
+    
     class Meta:
         ordering = ['name']
 

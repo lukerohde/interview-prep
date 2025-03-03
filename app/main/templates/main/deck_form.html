@@ -51,6 +51,10 @@
                         rows="10" placeholder="{{ tutor.content_placeholder|default:'Enter content to generate flashcards from' }}">{{ form.content.value|default:'' }}</textarea>
             </div>
 
+            {% if presenter.should_render_document_form %}
+              {% include 'main/_document_form.html' %}
+            {% endif %}
+
             <div class="d-flex justify-content-between align-items-center">
               <a href="{% url 'main:deck_list' url_path=tutor.url_path %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left me-2"></i>Back to {{ tutor.deck_name_plural }}
