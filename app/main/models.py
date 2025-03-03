@@ -90,33 +90,6 @@ class TutorPromptOverride(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.tutor_url_path} - {self.key}"
 
-class Document(models.Model):
-    class DocumentType(models.TextChoices):
-        RESUME = 'resume', 'Resume'
-        JOB_DESCRIPTION = 'job_description', 'Job Description'
-        STUDY_MATERIAL = 'study_material', 'Study Material'
-        LANGUAGE_TEXT = 'language_text', 'Language Text'
-
-    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    name = models.CharField(max_length=255, help_text='Name of the document')
-    url = models.URLField(blank=True, null=True, help_text='URL to the document in S3')
-    content = models.TextField(help_text='Extracted or provided text content')
-    document_type = models.CharField(
-        max_length=50,
-        choices=DocumentType.choices,
-        default=DocumentType.STUDY_MATERIAL,
-        help_text='Type of document'
-    )
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='documents')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        ordering = ['-updated_at']
-
 class Deck(models.Model):
     class DeckType(models.TextChoices):
         JOB_APPLICATION = 'job_application', 'Job Application'
@@ -132,7 +105,6 @@ class Deck(models.Model):
         help_text='Type of deck'
     )
     tutor = models.ForeignKey(Tutor, on_delete=models.CASCADE, related_name='decks')
-    documents = models.ManyToManyField(Document, related_name='decks', blank=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='decks')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -227,6 +199,33 @@ class Deck(models.Model):
         cards = self.generate_flashcards()
         return self.save_flashcards(cards)
 
+class Document(models.Model):
+    class DocumentType(models.TextChoices):
+        RESUME = 'resume', 'Resume'
+        JOB_DESCRIPTION = 'job_description', 'Job Description'
+        STUDY_MATERIAL = 'study_material', 'Study Material'
+        LANGUAGE_TEXT = 'language_text', 'Language Text'
+
+    id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
+    name = models.CharField(max_length=255, help_text='Name of the document')
+    url = models.URLField(blank=True, null=True, help_text='URL to the document in S3')
+    content = models.TextField(help_text='Extracted or provided text content')
+    document_type = models.CharField(
+        max_length=50,
+        choices=DocumentType.choices,
+        default=DocumentType.STUDY_MATERIAL,
+        help_text='Type of document'
+    )
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='documents')
+    deck = models.ForeignKey(Deck, on_delete=models.CASCADE, related_name='documents')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ['-updated_at']
 
 class ReviewStatus(str, Enum):
     FORGOT = 'forgot'
