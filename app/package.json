@@ -19,9 +19,11 @@
   },
   "dependencies": {
     "@hotwired/stimulus": "^3.2.2",
+    "codemirror": "^5.65.2",
     "mammoth": "^1.9.0",
+    "marked": "^15.0.7",
     "pdfjs-dist": "^4.10.38",
-    "showdown": "^2.1.0"
+    "simplemde": "^1.11.2"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
