@@ -5,14 +5,14 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>{% block title %}{{ application.title }}{% endblock %}</title>
         {% load static %}
-        
+
         <!-- Bootstrap CSS -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
-        
+
         <!-- Modern Fonts for AI Startup -->
         <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-        
+
         <!-- App CSS -->
         <link rel="stylesheet" href="{% static 'dist/css/index.css' %}">
         {% block extra_css %}{% endblock %}
@@ -24,14 +24,14 @@
         <div class="container-fluid px-4">
             <div class="d-flex justify-content-between align-items-center w-100">
                 <a class="navbar-brand" href="{% url 'main:home' %}">{{ application.title }}</a>
-                
+
                 <!-- Hamburger button -->
-                <button class="d-md-none btn btn-outline-primary" type="button" data-bs-toggle="offcanvas" 
+                <button class="d-md-none btn btn-outline-primary" type="button" data-bs-toggle="offcanvas"
                     data-bs-target="{% if request.resolver_match.url_name == 'deck_detail' %}#deckSidebar{% else %}#navOffcanvas{% endif %}">
                     <i class="bi bi-list"></i>
                 </button>
             </div>
-            
+
             <!-- Collapsible content -->
             <div class="collapse navbar-collapse" id="navbarContent">
                 {% if user.is_authenticated %}
@@ -39,7 +39,7 @@
                 <ul class="navbar-nav d-none d-md-flex ms-auto">
                     {% if tutors.count > 1 %}
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" 
+                        <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}"
                            href="{% url 'main:home' %}">
                             <i class="bi bi-people me-1"></i>
                             <span>Tutors</span>
@@ -48,14 +48,14 @@
                     {% endif %}
                     {% if tutor %}
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'deck_list' %}active{% endif %}" 
+                        <a class="nav-link {% if request.resolver_match.url_name == 'deck_list' %}active{% endif %}"
                            href="{% url 'main:deck_list' url_path=tutor.url_path %}">
                             <i class="bi bi-briefcase me-1"></i>
                             <span>{{ tutor.deck_name_plural }}</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.resolver_match.url_name == 'tutor_prompts' %}active{% endif %}" 
+                        <a class="nav-link {% if request.resolver_match.url_name == 'tutor_prompts' %}active{% endif %}"
                            href="{% url 'main:tutor_prompts' url_path=tutor.url_path %}">
                             <i class="bi bi-gear me-1"></i>
                             <span>Configure Prompts</span>
@@ -65,7 +65,7 @@
 
                     {% if user.is_staff %}
                     <li class="nav-item">
-                        <a class="nav-link {% if 'invitations' in request.path %}active{% endif %}" 
+                        <a class="nav-link {% if 'invitations' in request.path %}active{% endif %}"
                            href="{% url 'main:invitation_list' %}">
                             <i class="bi bi-envelope me-1"></i>
                             <span>Manage Invitations</span>
@@ -81,8 +81,6 @@
                     </li>
                 </ul>
                 {% endif %}
-
-
             </div>
         </div>
     </nav>
@@ -90,7 +88,7 @@
     <!-- Main Content -->
     <main class="flex-grow-1 overflow-auto">
         {% block content %}{% endblock %}
-        
+
         <!-- Django Messages -->
         <div id="django-messages" class="d-none">
             {% if messages %}
@@ -102,7 +100,7 @@
     </main>
 
     <!-- Bootstrap JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{% static 'dist/js/index.js' %}" defer></script>
     {% block module_js %}{% endblock %}
 
@@ -114,8 +112,8 @@
                 const type = msg.dataset.tags || 'info'
                 // Let the controllers handle their own toasts
                 if (type === 'error' || type === 'success') {
-                    const event = new CustomEvent('show-toast', { 
-                        detail: { message: msg.textContent, type } 
+                    const event = new CustomEvent('show-toast', {
+                        detail: { message: msg.textContent, type }
                     })
                     document.dispatchEvent(event)
                 }
