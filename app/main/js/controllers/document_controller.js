@@ -1,7 +1,18 @@
 import { Controller } from "@hotwired/stimulus"
 import * as pdfjsLib from "pdfjs-dist/build/pdf"
 import mammoth from "mammoth"
-import showdown from "showdown"
+import SimpleMDE from "simplemde"
+import { marked } from 'marked'
+
+// Import CodeMirror components
+import 'codemirror/lib/codemirror'
+import 'codemirror/mode/markdown/markdown'
+import 'codemirror/mode/xml/xml'
+import 'codemirror/mode/gfm/gfm'
+import 'codemirror/addon/mode/overlay'
+import 'codemirror/addon/display/placeholder'
+import 'codemirror/addon/display/fullscreen'
+import 'codemirror/addon/edit/continuelist'
 
 import('pdfjs-dist/build/pdf.worker.min.mjs')
 
@@ -12,11 +23,39 @@ export default class extends Controller {
     deckId: String,
   }
   converter = null
+  editors = new Map()
 
   connect() {
-    this.converter = new showdown.Converter()
     console.log("Connected to the document controller.")
     this.listenInputEvents()
+
+    // Initialize editors for existing documents
+    document.querySelectorAll('textarea[id^="editor-"]').forEach(textarea => {
+      this.initializeEditor(textarea, '', true)
+    })
+  }
+
+  initializeEditor(textarea, placeholder = '', isExisting = false) {
+    // Only hide the editor container if it's a new document
+    if (!isExisting) {
+      const editorContainer = textarea.parentElement
+      editorContainer.style.display = 'none'
+    }
+
+    const editor = new SimpleMDE({
+      element: textarea,
+      spellChecker: false,
+      status: ["lines", "words"],
+      toolbar: ["bold", "italic", "heading", "|",
+               "quote", "unordered-list", "ordered-list", "|",
+               "link", "table", "|",
+               "preview", "side-by-side", "fullscreen"],
+      minHeight: "200px",
+      placeholder: placeholder,
+      previewRender: text => marked(text)
+    })
+    this.editors.set(textarea.id, editor)
+    return editor
   }
 
   listenInputEvents() {
@@ -37,24 +76,14 @@ export default class extends Controller {
 
     Array.from(files).forEach((file, index) => {
       const fileType = file.name.split('.').pop().toLowerCase()
-      const fileName = file.name
-      const uniqueId = `document_${index}`
-
-      const listItem = document.createElement("div")
-      listItem.classList.add("mb-4")
-      listItem.innerHTML = `
-        <label class="form-label fw-bold">Document: ${fileName}</label>
-        <textarea name="${uniqueId}_content" class="form-control" rows="10" placeholder="Processing ${fileName}..."></textarea>
-        <input type="hidden" name="${uniqueId}_name" value="${fileName}">
-      `
-      this.documentListTarget.appendChild(listItem)
+      const { listItem, textarea } = this.createDocumentItem(file, index)
 
       if (fileType === "pdf") {
-        this.extractTextFromPDF(file, listItem.querySelector("textarea"))
+        this.extractTextFromPDF(file, textarea)
       } else if (fileType === "docx") {
-        this.extractTextFromDocx(file, listItem.querySelector("textarea"))
+        this.extractTextFromDocx(file, textarea)
       } else if (fileType === "txt") {
-        this.extractTextFromTxt(file, listItem.querySelector("textarea"))
+        this.extractTextFromTxt(file, textarea)
       } else {
         this.hideSpinner()
         this.showError("Unsupported file type. Please upload a PDF, DOCX, or TXT file.")
@@ -141,7 +170,17 @@ export default class extends Controller {
   }
 
   displayDocumentResponse(text, fileName, textarea) {
-    textarea.value = text
+    const editor = this.editors.get(textarea.id)
+    if (editor) {
+      // Show the editor container and hide the processing message
+      const editorContainer = textarea.parentElement
+      const processingMessage = editorContainer.previousElementSibling
+
+      processingMessage.style.display = 'none'
+      editorContainer.style.display = 'block'
+
+      editor.value(text)
+    }
   }
 
   showMessage(message) {
@@ -206,5 +245,40 @@ export default class extends Controller {
       }
     }
     return cookieValue
+  }
+
+  createDocumentItem(file, index) {
+    const fileType = file.name.split('.').pop().toLowerCase()
+    const fileName = file.name
+    const uniqueId = `document_${index}`
+    const editorId = `editor-${Date.now()}-${index}`
+
+    const listItem = document.createElement("div")
+    listItem.classList.add("mb-4", "document-item", "card")
+    listItem.innerHTML = `
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">${fileName}</h5>
+      </div>
+      <div class="card-body">
+        <div class="processing-message">
+          <div class="d-flex align-items-center">
+            <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+              <span class="visually-hidden">Processing...</span>
+            </div>
+            <span>Processing ${fileName}...</span>
+          </div>
+        </div>
+        <div class="editor-container">
+          <textarea id="${editorId}" name="${uniqueId}_content" class="form-control" rows="10"></textarea>
+          <input type="hidden" name="${uniqueId}_name" value="${fileName}">
+        </div>
+      </div>
+    `
+    this.documentListTarget.appendChild(listItem)
+
+    const textarea = document.getElementById(editorId)
+    this.initializeEditor(textarea, `Processing ${fileName}...`)
+
+    return { listItem, textarea }
   }
 }

@@ -1,4 +1,10 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dist/css/codemirror.css' %}">
+<link rel="stylesheet" href="{% static 'dist/css/simplemde.min.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -82,16 +88,22 @@
             {% if documents %}
               <div class="mb-4">
                 <label class="form-label fw-bold">Existing Documents</label>
-                <ul class="list-group">
+                <div class="document-list">
                   {% for document in documents %}
-                    <li class="list-group-item" id="document-{{ document.id }}">
-                      <h5>{{ document.name }}</h5>
-                      <input type="hidden" name="document_{{ document.id }}_id" value="{{ document.id }}">
-                      <textarea name="document_{{ document.id }}_content" class="form-control" rows="10">{{ document.content }}</textarea>
-                      <button type="button" class="btn btn-danger mt-2" data-action="click->document#deleteDocument" data-document-id="{{ document.id }}">Delete</button>
-                    </li>
+                    <div class="card mb-3" id="document-{{ document.id }}">
+                      <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ document.name }}</h5>
+                        <button type="button" class="btn btn-danger btn-sm" data-action="click->document#deleteDocument" data-document-id="{{ document.id }}">
+                          <i class="bi bi-trash"></i> Delete
+                        </button>
+                      </div>
+                      <div class="card-body">
+                        <input type="hidden" name="document_{{ document.id }}_id" value="{{ document.id }}">
+                        <textarea id="editor-{{ document.id }}" name="document_{{ document.id }}_content" class="form-control" rows="10">{{ document.content }}</textarea>
+                      </div>
+                    </div>
                   {% endfor %}
-                </ul>
+                </div>
               </div>
             {% endif %}
 
