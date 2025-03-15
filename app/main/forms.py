@@ -36,14 +36,9 @@ class DeckForm(forms.ModelForm):
             'name': 'Enter a descriptive name for your deck',
             'description': 'Enter a description for your deck',
             'content': 'Enter the text content that will be used to generate flashcards',
-        } 
+        }
 
 class DocumentForm(forms.ModelForm):
-    file = forms.FileField(required=False, widget=forms.FileInput(attrs={
-        'class': 'form-control',
-        'accept': '.pdf,.doc,.docx,.txt'
-    }))
-
     class Meta:
         model = Document
         fields = ['name', 'content']
@@ -76,3 +71,15 @@ class InvitationForm(forms.Form):
         }),
         help_text='Enter the email address of the person you want to invite'
     )
+
+    def save(self, deck, owner, commit=True):
+      document = super().save(commit=False)
+
+      document.deck = deck
+      document.owner = owner
+
+      if commit:
+          document.save()
+
+      return document
+

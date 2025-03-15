@@ -17,18 +17,22 @@
           <h3 class="mb-0">{% if deck %}Edit{% else %}Create{% endif %} {{ tutor.deck_name }}</h3>
         </div>
         <div class="card-body p-4">
-          <form method="post">
+          <form method="post" data-controller="document"
+                data-document-tutor-url-path-value="{{ request.tutor.url_path }}"
+                {% if deck %}data-document-deck-id-value="{{ deck.id }}"{% endif %}
+                data-document-ai-response-url-value="{% url 'main:text-ai-response-list' %}">
             {% csrf_token %}
-            
+
             {% if form.non_field_errors %}
             <div class="alert alert-danger">
               {{ form.non_field_errors }}
             </div>
             {% endif %}
+
             <div class="mb-4">
               <label for="{{ form.name.id_for_label }}" class="form-label fw-bold">{{ tutor.deck_name }} Name</label>
-              <input type="text" name="name" class="form-control form-control-lg {% if form.name.errors %}is-invalid{% endif %}" 
-                     id="{{ form.name.id_for_label }}" value="{{ form.name.value|default:'' }}" 
+              <input type="text" name="name" class="form-control form-control-lg {% if form.name.errors %}is-invalid{% endif %}"
+                     id="{{ form.name.id_for_label }}" value="{{ form.name.value|default:'' }}"
                      placeholder="Enter a name for your {{ tutor.deck_name|lower }}">
               {% if form.name.errors %}
                 <div class="invalid-feedback">{{ form.name.errors|join:', ' }}</div>
@@ -37,8 +41,8 @@
 
             <div class="mb-4">
               <label for="{{ form.description.id_for_label }}" class="form-label fw-bold">Description</label>
-              <textarea name="description" class="form-control {% if form.description.errors %}is-invalid{% endif %}" 
-                        id="{{ form.description.id_for_label }}" rows="3" 
+              <textarea name="description" class="form-control {% if form.description.errors %}is-invalid{% endif %}"
+                        id="{{ form.description.id_for_label }}" rows="3"
                         placeholder="Enter a description for your {{ tutor.deck_name|lower }}">{{ form.description.value|default:'' }}</textarea>
               {% if form.description.errors %}
                 <div class="invalid-feedback">{{ form.description.errors|join:', ' }}</div>
@@ -47,9 +51,49 @@
 
             <div class="mb-4">
               <label for="{{ form.content.id_for_label }}" class="form-label fw-bold">Content</label>
-              <textarea name="content" class="form-control" id="{{ form.content.id_for_label }}" 
+              <textarea name="content" class="form-control" id="{{ form.content.id_for_label }}"
                         rows="10" placeholder="{{ tutor.content_placeholder|default:'Enter content to generate flashcards from' }}">{{ form.content.value|default:'' }}</textarea>
             </div>
+
+            {% if presenter.should_render_document_form %}
+            <div class="mb-4">
+              <label class="form-label fw-bold">Documents</label>
+              <div class="document-upload-section">
+                <!-- Hidden file input -->
+                <input type="file" class="d-none" id="fileInput" data-document-target="documentFileInput" accept=".pdf, .docx, .txt" multiple>
+
+                <!-- Upload button and spinner row -->
+                <div class="d-flex align-items-center mb-3">
+                  <label for="fileInput" class="btn btn-primary btn-lg px-4 bi bi-upload" data-document-target="uploadLabel">
+                    Upload Documents
+                  </label>
+                  <div class="spinner-grow text-warning ms-3" style="display: none;" role="status" data-document-target="documentSpinner"></div>
+                </div>
+
+                <!-- Status message -->
+                <p class="text-muted mb-3" data-document-target="documentMessage"></p>
+
+                <!-- Document list for new uploads -->
+                <div data-document-target="documentList"></div>
+              </div>
+            </div>
+            {% endif %}
+
+            {% if documents %}
+              <div class="mb-4">
+                <label class="form-label fw-bold">Existing Documents</label>
+                <ul class="list-group">
+                  {% for document in documents %}
+                    <li class="list-group-item" id="document-{{ document.id }}">
+                      <h5>{{ document.name }}</h5>
+                      <input type="hidden" name="document_{{ document.id }}_id" value="{{ document.id }}">
+                      <textarea name="document_{{ document.id }}_content" class="form-control" rows="10">{{ document.content }}</textarea>
+                      <button type="button" class="btn btn-danger mt-2" data-action="click->document#deleteDocument" data-document-id="{{ document.id }}">Delete</button>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
 
             <div class="d-flex justify-content-between align-items-center">
               <a href="{% url 'main:deck_list' url_path=tutor.url_path %}" class="btn btn-outline-secondary">

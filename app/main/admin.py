@@ -1,10 +1,18 @@
 from django.contrib import admin
-from .models import Deck, FlashCard
+from .models import Deck, Document, FlashCard
 
 @admin.register(Deck)
 class DeckAdmin(admin.ModelAdmin):
     list_display = ('name', 'deck_type', 'owner', 'status', 'created_at', 'updated_at')
     list_filter = ('deck_type', 'status', 'owner')
+    search_fields = ('name', 'owner__username')
+    readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(Document)
+class DocumentAdmin(admin.ModelAdmin):
+    list_display = ('deck', 'name', 'content', 'owner', 'created_at', 'updated_at')
+    list_filter = ('deck', 'owner')
     search_fields = ('name', 'owner__username')
     readonly_fields = ('created_at', 'updated_at')
 

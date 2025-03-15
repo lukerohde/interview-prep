@@ -6,6 +6,8 @@ from .views import flashcard_views
 from .views import document_views
 from .views import tutor_views
 from .views import user_views
+from . import view_text_ai_response
+
 
 app_name = 'main'
 
@@ -13,8 +15,9 @@ app_name = 'main'
 api_router = DefaultRouter()
 api_router.register(r'decks/(?P<deck_pk>[^/.]+)/flashcards', flashcard_views.FlashCardViewSet, basename='api-flashcard')
 api_router.register(r'tutors/(?P<url_path>[^/.]+)/decks', deck_views.DeckViewSet, basename='api-deck')
-# Voice chat endpoints handled separately below
 api_router.register(r'documents', document_views.DocumentViewSet, basename='api-document')
+api_router.register(r'text-ai-response', view_text_ai_response.TextAIResponseViewSet, basename='text-ai-response')
+# Voice chat endpoints handled separately below
 
 api_patterns = [
     path('api/', include(api_router.urls)),
@@ -32,6 +35,7 @@ view_patterns = [
         path('<uuid:pk>/', document_views.document_detail, name='document_detail'),
         path('<uuid:pk>/edit/', document_views.document_edit, name='document_edit'),
         path('<uuid:pk>/delete/', document_views.document_delete, name='document_delete'),
+        path('<uuid:deck_pk>/documents/<uuid:document_id>/delete/', deck_views.delete_document, name='delete_document'),
     ])),
     path('tutors/<str:url_path>/', include([
         path('prompts/', tutor_views.tutor_prompts, name='tutor_prompts'),
