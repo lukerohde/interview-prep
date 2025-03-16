@@ -9,13 +9,17 @@ fi
 
 source .env
 
-# Get database ID from config
-DB_ID=$(curl -s \
-    -H "Authorization: Bearer ${RENDER_API_KEY}" \
-    "https://api.render.com/v1/postgres" | jq -r '.[0].postgres.id')
+# Get database config if it doesn't exist
+if [ ! -f "./.render_db_env" ]; then
+    echo "Database config not found, fetching..."
+    ./deploy-render/get-db-config
+fi
+
+# Source the database configuration
+. ./.render_db_env
 
 if [ -z "$DB_ID" ]; then
-    echo "Error: Could not find database ID"
+    echo "Error: Could not get database ID"
     exit 1
 fi
 

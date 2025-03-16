@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('main', '0012_tutor_content_placeholder'),
+        ('main', '0013_invitation'),
     ]
 
     operations = [

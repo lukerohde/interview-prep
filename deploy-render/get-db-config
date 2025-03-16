@@ -14,10 +14,39 @@ DB_INFO=$(curl -s \
     -H "Authorization: Bearer ${RENDER_API_KEY}" \
     "https://api.render.com/v1/postgres")
 
-# Extract database ID (note the nested postgres key)
-DB_ID=$(echo $DB_INFO | jq -r '.[0].postgres.id')
-DB_NAME=$(echo $DB_INFO | jq -r '.[0].postgres.databaseName')
-DB_USER=$(echo $DB_INFO | jq -r '.[0].postgres.databaseUser')
+echo $DB_INFO
+
+# Extract all database names and IDs
+DB_COUNT=$(echo "$DB_INFO" | jq '. | length')
+
+if [[ "$DB_COUNT" -eq 0 ]]; then
+  echo "No databases found."
+  exit 1
+fi
+
+echo "Available Databases:"
+for i in $(seq 0 $((DB_COUNT - 1))); do
+  DB_NAME=$(echo "$DB_INFO" | jq -r ".[$i].postgres.databaseName")
+  DB_ID=$(echo "$DB_INFO" | jq -r ".[$i].postgres.id")
+  echo "$((i + 1))) $DB_NAME ($DB_ID)"
+done
+
+# Prompt the user to select a database
+read -p "Select a database (1-$DB_COUNT): " CHOICE
+
+# Validate user input
+if ! [[ "$CHOICE" =~ ^[1-$DB_COUNT]$ ]]; then
+  echo "Invalid choice. Exiting."
+  exit 1
+fi
+
+# Convert user input to zero-based index
+INDEX=$((CHOICE - 1))
+
+# Extract chosen database details
+DB_ID=$(echo "$DB_INFO" | jq -r ".[$INDEX].postgres.id")
+DB_NAME=$(echo "$DB_INFO" | jq -r ".[$INDEX].postgres.databaseName")
+DB_USER=$(echo "$DB_INFO" | jq -r ".[$INDEX].postgres.databaseUser")
 
 if [ -z "$DB_ID" ]; then
     echo "Error: Could not find database ID"
@@ -36,6 +65,7 @@ DB_PASSWORD=$(echo $DB_CONN_INFO | jq -r '.password')
 
 # Output the configuration
 cat << EOF > .render_db_env
+DB_ID=$DB_ID
 PG_HOST=$DB_HOST
 PG_USER=$DB_USER
 PG_DB=$DB_NAME
