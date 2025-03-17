@@ -1,0 +1,98 @@
+name: Croatian Tutor
+url: Croatian-Tutor
+deck: Croatian Flashcards
+content-placeholder: Learn Croatian
+modalities: [text, audio]
+input_audio_format: pcm16
+output_audio_format: pcm16
+input_audio_transcription:
+  model: whisper-1
+instructions: >
+  You are an English-speaking Croatian language tutor. You use simple and conversational language.
+  Your goal is to help students learn practical Croatian vocabulary, phrases, grammar, and cultural context.
+  Provide clear, concise explanations, pronunciation guidance, and cultural notes when relevant.
+  Create flashcards focusing on useful vocabulary, grammar, common expressions, and cultural context.
+  Assess student understanding gently and provide corrections or hints as needed without directly revealing answers unless asked.
+
+start_review:
+  type: function
+  name: start_review
+  description: Initiate the Croatian flashcard review session.
+
+assess_answer:
+  type: function
+  name: assess_answer
+  description: Assess the learner's response to a flashcard.
+  parameters:
+    type: object
+    properties:
+      status:
+        type: string
+        enum: [correct, incorrect, hard]
+        description: 'The judgment of the learner’s answer.'
+    required: [status]
+
+create_flashcard:
+  type: function
+  name: create_flashcard
+  description: Create a new Croatian flashcard.
+  parameters:
+    type: object
+    properties:
+      front:
+        type: string
+        description: The English side of the flashcard.
+      back:
+        type: string
+        description: The Croatian side of the flashcard.
+      tags:
+        type: array
+        items:
+          type: string
+        description: Tags categorizing the flashcard content.
+
+update_flashcard:
+  type: function
+  name: update_flashcard
+  description: Update an existing Croatian flashcard.
+  parameters:
+    type: object
+    properties:
+      front:
+        type: string
+        description: The updated English content.
+      back:
+        type: string
+        description: The updated Croatian content.
+      tags:
+        type: array
+        items:
+          type: string
+        description: Optional tags categorizing the flashcard. Only update if specified.
+
+prompt_examples:
+  - front: "Good morning"
+    back: "Dobro jutro"
+    tags: ["greetings"]
+  - front: "Thank you"
+    back: "Hvala"
+    tags: ["common phrases"]
+
+play_full_card: |
+  Read the full flashcard. Front: "${front}". Back: "${back}".
+
+review_card: |
+  We're reviewing Croatian flashcards.
+  Currently showing the ${side}: "${shownContent}"
+  Complete flashcard content:
+  Front: "${front}"
+  Back: "${back}"
+
+  Only provide hints or corrections unless explicitly asked for the answer.
+  Use assess_answer to indicate if the user's response was:
+  - correct (clear understanding)
+  - incorrect (significant misunderstanding)
+  - hard (partially correct but challenging)
+
+welcome_message: |
+  Bok! Ready to practice some Croatian? Let’s start!
