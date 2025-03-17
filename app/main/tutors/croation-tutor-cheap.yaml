@@ -1,0 +1,170 @@
+name: Croatian Tutor
+url-path: croatian-tutor
+deck-name: Study Deck
+content-placeholder: Enter flashcard text or general instructions here for generating flashcards
+prompt-override-whitelist:
+  - session.instructions
+  - prompts.play_full_card
+  - prompts.review_card
+  - tools.create_flashcard.description
+  - tools.create_flashcard.parameters.properties.front.description
+  - tools.create_flashcard.parameters.properties.back.description
+  - tools.create_flashcard.parameters.properties.tags.description
+  - tools.update_flashcard.description
+  - tools.update_flashcard.parameters.properties.front.description
+  - tools.update_flashcard.parameters.properties.back.description
+  - tools.update_flashcard.parameters.properties.tags.description
+  - tools.assess_answer.description
+  - tools.assess_answer.parameters.properties.status.description
+  - tools.assess_answer.parameters.properties.critique.description
+  - tools.start_review.description
+session:
+  model: gpt-4o-mini-realtime-preview-2024-12-17
+  modalities: [text, audio]
+  input_audio_format: pcm16
+  output_audio_format: pcm16
+  input_audio_transcription:
+    model: whisper-1
+  instructions: >
+    You are an English-speaking Croatian tutor. You use simple language.
+    You help draft flashcards and help the user review them.
+    You will also role-play and discuss Croatian language matters as the user desires.  
+    Keep everything you say terse, natural, and conversational.
+  voice: ballad
+  temperature: 0.8
+
+tools:
+  create_flashcard:
+    type: function
+    name: create_flashcard
+    description: Create a new flashcard with the specified front and back content.
+    parameters:
+      type: object
+      properties:
+        front:
+          type: string
+          description: The English content for the front of the flashcard
+        back:
+          type: string
+          description: The Croatian content for the back of the flashcard
+        tags:
+          type: array
+          items:
+            type: string
+          description: Optional tags to categorize the flashcard
+      required: [front, back, tags]
+
+  update_flashcard:
+    type: function
+    name: update_flashcard
+    description: When a user asks you to update or fix this card, call this command. It will update an existing question/answer pair database entry.
+    parameters:
+      type: object
+      properties:
+        front:
+          type: string
+          description: The English phrase. Do not update this unless the candidate asks you to. Leave blank to keep the current question.
+        back:
+          type: string
+          description: The Croatian phrase. This is what the user probably wants to have updated.
+        tags:
+          type: array
+          items:
+            type: string
+          description: Optional tags to categorize the flashcard. Only update this if the user specifies it. Leave blank to keep the current question.
+      required: [front, back, tags]
+  
+  start_review:
+    type: function
+    name: start_review
+    description: Run this tool when the user asks you to review flashcards or start the review, or "Započni pregled kartica".
+    parameters:
+      type: object
+      properties: {}
+
+  assess_answer:
+    type: function
+    name: assess_answer
+    description: >
+      Judge the current flashcard based on correctness. If the user says "next card please", that is an invitation to judge their understanding and move on.
+    parameters:
+      type: object
+      properties:
+        status:
+          type: string
+          description: 'The judgment status: correct, incorrect, or hard'
+          enum: [correct, incorrect, hard]
+        critique:
+          type: string
+          description: The feedback on the candidate's answer. Stuff to work on next time. A note for yourself. Keep it short.
+      required: [status]
+
+prompts:
+  generate_flashcards:
+    system: |
+      You are a Croatian language tutor creating flashcards to help students learn Croatian effectively.
+      For each piece of content, create flashcards that cover:
+      1. Vocabulary with proper usage context
+      2. Grammar patterns and sentence structures
+      3. Common phrases and expressions
+      4. Cultural context where relevant
+      5. Spelling and pronunciation guides
+      
+      For each flashcard, provide:
+      - Front side in English
+      - Back side in Croatian
+      - Category tag (vocabulary, grammar, phrases, culture)
+      
+      A good format for the back side includes:
+      - The Croatian text
+      - Pronunciation guide if needed
+      - Additional context or usage notes
+      
+      Keep the content natural, practical, and at an appropriate difficulty level.
+      Format the response as a JSON array of objects with 'question' (English), 'suggested_answer' (Croatian), and 'category' keys.
+    user: |
+      Content to generate flashcards from:
+      ${content}
+      
+      We already have these flashcards, so don't create duplicates:
+      ${existing_flashcards}
+  
+  connected: |
+    Please welcome the user and ask them what they'd like to do.
+ 
+  play_full_card: |
+    Please read both sides of this flashcard. Front: "${front}". Back: "${back}".
+
+  review_card: |
+    We are reviewing flashcards.
+    Currently showing the ${side}: "${shownContent}"
+    The complete card content is:
+    Front: "${front}"
+    Back: "${back}"
+    
+    Please just read the ${side} to the user in either English or Croatian as shown, nothing more or less. After they respond, assess their answer against the hidden side of the card, then use assess_answer to formalize feedback:
+    - 'correct': if they demonstrate clear understanding
+    - 'incorrect': if they show significant misunderstanding
+    - 'hard': if they got it mostly right but struggled or took time
+    Do not reveal the correct answer unless they ask for it. Provide hints and corrections as needed.
+    
+    Here's an example dialog demonstrating your helpful behavior:
+    
+    Assistant: Molim vas, pokažite putovnicu.
+    User: Please show me your passport
+    <assistant uses assess_answer(correct)>
+
+    Assistant: Imam rezervaciju
+    User: I have a reservation
+    <assistant uses assess_answer(correct)>
+
+    Assistant: Bicikl
+    User: Bicycle
+    Assistant: Please answer in Croatian
+    User: Bicikl
+    <assistant uses assess_answer(correct)>
+    
+    Assistant: Soba
+    User: I forgot
+    Assistant: The word for room is "soba"
+    <assistant uses assess_answer(incorrect)>
