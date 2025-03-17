@@ -41,42 +41,42 @@ class Tutor(models.Model):
         """Get tutor config with optional user overrides"""
         if not self.config_path:
             raise ValueError("No config path set for this tutor")
-            
+
         # Load base config
         with open(self.config_path, 'r') as f:
             config = yaml.safe_load(f)
-            
+
         if user:
             # Get whitelist of allowed override paths
             whitelist = config.get('prompt-override-whitelist', [])
-            
+
             # Get user's overrides for this tutor, filtering by whitelist
             overrides = {
-                override.key: override.value 
+                override.key: override.value
                 for override in user.prompt_overrides.filter(
                     tutor_url_path=config.get('url-path')
                 )
                 if override.key in whitelist
             }
-            
+
             # Apply whitelisted overrides using dotted path notation
             for key, value in overrides.items():
                 target = config
                 *path_parts, final_key = key.split('.')
-                
+
                 # Navigate to the correct nested dictionary
                 for part in path_parts:
                     if part not in target:
                         target[part] = {}
                     target = target[part]
                 target[final_key] = value
-                
+
         return config
 
     def presenter(self):
         if self.name == "Interview Coach":
             return InterviewCoachPresenter(self)
-    
+
     class Meta:
         ordering = ['name']
 
@@ -150,7 +150,7 @@ class Deck(models.Model):
     def generate_flashcards(self):
         """Generate new flashcards without saving them"""
         existing_cards = self.get_existing_flashcards()
-        
+
         # Combine all available content sources
         content_parts = []
         if self.content and self.content.strip():
@@ -158,20 +158,20 @@ class Deck(models.Model):
         if self.documents.exists():
             content_parts.extend(doc.content for doc in self.documents.all() if doc.content.strip())
         combined_content = "\n\n".join(content_parts)
-        
+
         # Get the tutor's prompt configuration
         config = self.tutor.get_config(self.owner)
         prompts = config['prompts'].get('generate_flashcards', {})
         if not prompts or 'system' not in prompts or 'user' not in prompts:
             raise ValueError(f"Tutor {self.tutor.name} does not have the required generate_flashcards prompts configured")
-        
+
         # Format the user prompt with our variables
         existing_card_text = "\n" + json.dumps([q['front'] for q in existing_cards]) if existing_cards else ""
         user_prompt = Template(prompts['user']).safe_substitute(
             content=combined_content,
             existing_flashcards=existing_card_text
         )
-        
+
         # Call OpenAI using the helper
         response = call_openai(prompts['system'], user_prompt)
         return extract_json(response)
@@ -195,13 +195,13 @@ class Deck(models.Model):
         # Check if we have any content to generate from
         has_content = bool(self.content and self.content.strip())
         has_documents = self.documents.exists() and any(doc.content.strip() for doc in self.documents.all())
-        
+
         if not (has_content or has_documents):
             import logging
             logger = logging.getLogger(__name__)
             logger.warning(f"No content provided for deck {self.name} (id: {self.id}). Skipping flashcard generation.")
             return []
-            
+
         cards = self.generate_flashcards()
         return self.save_flashcards(cards)
 
@@ -245,21 +245,21 @@ class Invitation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     accepted_at = models.DateTimeField(null=True, blank=True)
     accepted_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='received_invitation')
-    
+
     def __str__(self):
         return f"Invitation for {self.email}"
-    
+
     @property
     def is_accepted(self):
         return self.accepted_at is not None
-    
+
     def accept(self, user):
         """Mark invitation as accepted by user"""
         if not self.is_accepted:
             self.accepted_at = timezone.now()
             self.accepted_by = user
             self.save()
-    
+
     class Meta:
         ordering = ['-created_at']
 
@@ -310,14 +310,14 @@ class FlashCard(models.Model):
 
     def update_review(self, status: ReviewStatus, side='front', notes=None):
         """Update review status and schedule next review using SM-2 algorithm
-        
+
         Args:
             status (ReviewStatus): The review status (FORGOT, HARD, or EASY)
             side (str, optional): Which side of the card to update ('front' or 'back'). Defaults to 'front'.
             notes (str, optional): Notes to store for this side of the card. Defaults to None.
         """
         now = timezone.now()
-        
+
         # Get current values
         ef = getattr(self, f'{side}_easiness_factor')
         reps = getattr(self, f'{side}_repetitions')
@@ -355,5 +355,5 @@ class FlashCard(models.Model):
         setattr(self, f'{side}_easiness_factor', ef)
         setattr(self, f'{side}_repetitions', reps)
         setattr(self, f'{side}_interval', interval)
-        
+
         self.save()

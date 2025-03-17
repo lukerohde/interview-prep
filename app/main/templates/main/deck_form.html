@@ -61,7 +61,6 @@
                         rows="10" placeholder="{{ tutor.content_placeholder|default:'Enter content to generate flashcards from' }}">{{ form.content.value|default:'' }}</textarea>
             </div>
 
-            {% if presenter.should_render_document_form %}
             <div class="mb-4">
               <label class="form-label fw-bold">Documents</label>
               <div class="document-upload-section">
@@ -83,7 +82,6 @@
                 <div data-document-target="documentList"></div>
               </div>
             </div>
-            {% endif %}
 
             {% if documents %}
               <div class="mb-4">
