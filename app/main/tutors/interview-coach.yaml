@@ -162,6 +162,9 @@ prompts:
       We already have these questions, so don't double up on them.
       ${existing_flashcards}
 
+  welcome: |
+    Please welcome the user and ask them what they'd like to do.
+  
   play_full_card: |
     Please read the question and answer to the user e.g. If given the question "${front}" you could answer "${back}".
 

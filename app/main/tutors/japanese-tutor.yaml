@@ -128,6 +128,10 @@ prompts:
       
       We already have these flashcards, so don't create duplicates:
       ${existing_flashcards}
+  
+  connected: |
+    Please welcome the user and ask them what they'd like to do.
+ 
   play_full_card: |
     Please read both sides of this flashcard. Front: "${front}". Back: "${back}".
 

@@ -12,16 +12,64 @@
 {% block content %}
 <div class="container">
     <div class="row justify-content-center mt-5">
-        <div class="col-md-5">
-            <div class="card shadow auth-card">
-                <div class="card-header gradient-heading text-center">
-                    {% if request.GET.invitation_id %}
-                        <h3 class="mb-0">{% trans "Accept Invitation" %}</h3>
-                    {% else %}
-                        <h3 class="mb-0">{% trans "Sign In or Sign Up" %}</h3>
-                    {% endif %}
+        <div class="col-md-8">
+            <div class="row mb-4">
+                <div class="col-12 text-center">
+                    <h1 class="display-5 fw-bold">Unlock Your Learning Potential with FlashSpeak</h1>
+                    <p class="lead">The smart way to learn anything, anywhere, through conversation</p>
                 </div>
-                <div class="card-body p-4">
+            </div>
+            <div class="row">
+                <div class="col-md-7 d-flex flex-column justify-content-center">
+                    <div class="features-list mb-4">
+                        <div class="d-flex align-items-start mb-3">
+                            <div class="feature-icon me-3">
+                                <i class="bi bi-mic-fill fs-4 text-primary"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1">Speak to Your Flashcards</h5>
+                                <p class="text-muted small">Practice hands-free on your mobile with our conversational AI coach</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-start mb-3">
+                            <div class="feature-icon me-3">
+                                <i class="bi bi-graph-up-arrow fs-4 text-primary"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1">Maximize Learning Efficiency</h5>
+                                <p class="text-muted small">Our AI tracks your progress and uses spaced repetition to optimize retention</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-start mb-3">
+                            <div class="feature-icon me-3">
+                                <i class="bi bi-briefcase-fill fs-4 text-primary"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1">Ace Your Interviews</h5>
+                                <p class="text-muted small">Upload your resume and job description for personalized interview coaching</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-start">
+                            <div class="feature-icon me-3">
+                                <i class="bi bi-translate fs-4 text-primary"></i>
+                            </div>
+                            <div>
+                                <h5 class="mb-1">Master Languages Faster</h5>
+                                <p class="text-muted small">Create custom flashcards for any scenario with pronunciation and grammar help</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                    <div class="card shadow auth-card">
+                        <div class="card-header gradient-heading text-center">
+                            {% if request.GET.invitation_id %}
+                                <h3 class="mb-0">{% trans "Accept Invitation" %}</h3>
+                            {% else %}
+                                <h3 class="mb-0">{% trans "Sign In or Sign Up" %}</h3>
+                            {% endif %}
+                        </div>
+                        <div class="card-body p-4">
                     {% if user.is_authenticated %}
                         <div class="alert alert-info text-center mb-0">
                             {% url 'account_logout' as logout_url %}
@@ -55,9 +103,10 @@
                             </div>
                             
                             <div class="d-grid gap-2">
-                                <button class="btn btn-primary" type="submit">
-                                    <i class="bi bi-box-arrow-in-right me-2"></i>{% trans "Let's Go!" %}
+                                <button class="btn btn-primary btn-lg" type="submit">
+                                    <i class="bi bi-box-arrow-in-right me-2"></i>{% trans "Start Learning Now!" %}
                                 </button>
+                                <p class="text-center small mt-2">Join thousands of learners who've improved their skills with FlashSpeak</p>
                             </div>
                             
                             {% if redirect_field_value %}
@@ -67,6 +116,11 @@
                     {% endif %}
                 </div>
             </div>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <p class="text-muted small">"FlashSpeak has revolutionized how I prepare for interviews and learn languages." - Sarah K.</p>
         </div>
     </div>
 </div>
