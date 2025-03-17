@@ -37,13 +37,16 @@ class DeckViewSet(viewsets.ModelViewSet):
                     for key, value in request.POST.items():
                         if key.endswith('_content'):
                             document_name_key = key.replace('_content', '_name')
-                            document_name = request.POST.get(document_name_key, 'Unnamed Document')
-                            Document.objects.create(
-                                name=document_name,
-                                content=value,
-                                owner=request.user,
-                                deck=deck
-                            )
+                            document_name = request.POST.get(document_name_key)
+
+                            # Only create document if both name and content are provided
+                            if document_name and value.strip():
+                                Document.objects.create(
+                                    name=document_name,
+                                    content=value,
+                                    owner=request.user,
+                                    deck=deck
+                                )
 
                     # Generate interview questions
                     try:
@@ -78,20 +81,31 @@ class DeckViewSet(viewsets.ModelViewSet):
                     for key, value in request.POST.items():
                         if key.endswith('_content'):
                             document_name_key = key.replace('_content', '_name')
-                            document_name = request.POST.get(document_name_key, 'Unnamed Document')
+                            document_name = request.POST.get(document_name_key)
                             document_id_key = key.replace('_content', '_id')
                             document_id = request.POST.get(document_id_key)
 
-                            if document_id:
-                                # Update existing document
-                                try:
-                                    document = Document.objects.get(id=document_id, deck=deck, owner=request.user)
-                                    document.content = value
-                                    document.name = document_name
-                                    document.save()
-                                    processed_docs.add(document.id)
-                                except Document.DoesNotExist:
-                                    # If document doesn't exist, create new one
+                            # Only process if both name and content are provided
+                            if document_name and value.strip():
+                                if document_id:
+                                    # Update existing document
+                                    try:
+                                        document = Document.objects.get(id=document_id, deck=deck, owner=request.user)
+                                        document.content = value
+                                        document.name = document_name
+                                        document.save()
+                                        processed_docs.add(document.id)
+                                    except Document.DoesNotExist:
+                                        # If document doesn't exist, create new one
+                                        document = Document.objects.create(
+                                            name=document_name,
+                                            content=value,
+                                            owner=request.user,
+                                            deck=deck
+                                        )
+                                        processed_docs.add(document.id)
+                                else:
+                                    # Create new document
                                     document = Document.objects.create(
                                         name=document_name,
                                         content=value,
@@ -99,18 +113,9 @@ class DeckViewSet(viewsets.ModelViewSet):
                                         deck=deck
                                     )
                                     processed_docs.add(document.id)
-                            else:
-                                # Create new document
-                                document = Document.objects.create(
-                                    name=document_name,
-                                    content=value,
-                                    owner=request.user,
-                                    deck=deck
-                                )
-                                processed_docs.add(document.id)
 
                     # Delete documents that were not in the form
-                    deck.documents.exclude(id__in=processed_docs).delete()
+                    Document.objects.filter(deck=deck).exclude(id__in=processed_docs).delete()
 
                     # Generate and save flashcards
                     created_cards = deck.generate_and_save_flashcards()
@@ -186,13 +191,16 @@ def deck_create(request, url_path):
                     for key, value in request.POST.items():
                         if key.endswith('_content'):
                             document_name_key = key.replace('_content', '_name')
-                            document_name = request.POST.get(document_name_key, 'Unnamed Document')
-                            document = Document.objects.create(
-                                name=document_name,
-                                content=value,
-                                owner=request.user,
-                                deck=deck
-                            )
+                            document_name = request.POST.get(document_name_key)
+
+                            # Only create document if both name and content are provided
+                            if document_name and value.strip():
+                                Document.objects.create(
+                                    name=document_name,
+                                    content=value,
+                                    owner=request.user,
+                                    deck=deck
+                                )
 
                     # Generate interview questions
                     try:

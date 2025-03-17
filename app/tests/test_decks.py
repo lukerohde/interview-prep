@@ -401,3 +401,112 @@ def test_generate_questions_error_handling(authenticated_client, user, tutor):
 
             # Verify no cards were created
             assert deck.flashcards.count() == 0
+
+def test_deck_create_with_documents(authenticated_client, user, tutor):
+    """Test creating a deck with multiple documents"""
+    data = {
+        'name': 'Test Deck with Documents',
+        'description': 'Test description',
+        'document_1_name': 'Resume.txt',
+        'document_1_content': 'This is my resume content',
+        'document_2_name': 'Cover Letter.txt',
+        'document_2_content': 'This is my cover letter content',
+        'document_3_name': 'Portfolio.txt',
+        'document_3_content': 'This is my portfolio content'
+    }
+
+    before_deck_count = Deck.objects.count()
+    before_doc_count = Document.objects.count()
+
+    response = authenticated_client.post(
+        reverse('main:deck_create', kwargs={'url_path': tutor.url_path}),
+        data
+    )
+
+    # Check deck was created
+    assert Deck.objects.count() == before_deck_count + 1
+    deck = Deck.objects.latest('id')
+    assert deck.owner == user
+    assert deck.name == data['name']
+    assert deck.description == data['description']
+
+    # Check documents were created
+    assert Document.objects.count() == before_doc_count + 3
+    documents = Document.objects.filter(deck=deck)
+    assert documents.count() == 3
+
+    # Verify each document's content
+    doc_names = ['Resume.txt', 'Cover Letter.txt', 'Portfolio.txt']
+    for doc_name in doc_names:
+        doc = documents.get(name=doc_name)
+        assert doc.owner == user
+        assert doc.content == data[f'document_{doc_names.index(doc_name) + 1}_content']
+
+    # Check redirect
+    assert response.status_code == 302
+    assert response.url == reverse('main:deck_detail', kwargs={'url_path': tutor.url_path, 'pk': deck.pk})
+
+def test_deck_create_without_documents(authenticated_client, user, tutor):
+    """Test creating a deck without any documents"""
+    data = {
+        'name': 'Test Deck without Documents',
+        'description': 'Test description'
+    }
+
+    before_deck_count = Deck.objects.count()
+    before_doc_count = Document.objects.count()
+
+    response = authenticated_client.post(
+        reverse('main:deck_create', kwargs={'url_path': tutor.url_path}),
+        data
+    )
+
+    # Check deck was created
+    assert Deck.objects.count() == before_deck_count + 1
+    deck = Deck.objects.latest('id')
+    assert deck.owner == user
+    assert deck.name == data['name']
+    assert deck.description == data['description']
+
+    # Check no documents were created
+    assert Document.objects.count() == before_doc_count
+    assert Document.objects.filter(deck=deck).count() == 0
+
+    # Check redirect
+    assert response.status_code == 302
+    assert response.url == reverse('main:deck_detail', kwargs={'url_path': tutor.url_path, 'pk': deck.pk})
+
+def test_deck_create_with_invalid_documents(authenticated_client, user, tutor):
+    """Test creating a deck with invalid document data"""
+    data = {
+        'name': 'Test Deck with Invalid Documents',
+        'description': 'Test description',
+        'document_1_content': 'Content without name',  # Missing name
+        'document_2_name': 'Document without content',  # Missing content
+        'document_3_name': '',  # Empty name
+        'document_3_content': 'Content with empty name',
+        'document_4_name': 'Empty content',
+        'document_4_content': ''  # Empty content
+    }
+
+    before_deck_count = Deck.objects.count()
+    before_doc_count = Document.objects.count()
+
+    response = authenticated_client.post(
+        reverse('main:deck_create', kwargs={'url_path': tutor.url_path}),
+        data
+    )
+
+    # Check deck was created
+    assert Deck.objects.count() == before_deck_count + 1
+    deck = Deck.objects.latest('id')
+    assert deck.owner == user
+    assert deck.name == data['name']
+
+    # Check no documents were created
+    assert Document.objects.count() == before_doc_count
+    assert Document.objects.filter(deck=deck).count() == 0
+
+    # Check redirect
+    assert response.status_code == 302
+    assert response.url == reverse('main:deck_detail', kwargs={'url_path': tutor.url_path, 'pk': deck.pk})
