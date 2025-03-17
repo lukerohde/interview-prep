@@ -36,7 +36,7 @@ export default class extends Controller {
 
     async savePrompt(textarea) {
         if (this.saveInProgress) return
-        
+
         this.saveInProgress = true
         const key = textarea.dataset.key
         const value = textarea.value.trim()
@@ -65,12 +65,14 @@ export default class extends Controller {
 
     showSaveIndicator(textarea) {
         const indicator = textarea.closest('.card-body').querySelector('.save-indicator')
-        indicator.style.display = 'block'
+        indicator.style.visibility = 'visible'
+        indicator.style.opacity = '1'
     }
 
     hideSaveIndicator(textarea) {
         const indicator = textarea.closest('.card-body').querySelector('.save-indicator')
-        indicator.style.display = 'none'
+        indicator.style.visibility = 'hidden'
+        indicator.style.opacity = '0'
     }
 
     getCookie(name) {

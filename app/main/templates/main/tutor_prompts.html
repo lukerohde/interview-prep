@@ -21,8 +21,8 @@
             <div class="bg-white rounded border p-3 h-100">
                 <h1 class="display-6">Prompt Settings</h1>
                 <p class="text-muted mb-4">Empty fields will use their default values</p>
-                
-                <div class="row g-4" 
+
+                <div class="row g-4"
     data-controller="prompt-override"
     data-prompt-override-save-url-value="{% url 'main:update_prompt_override' url_path=tutor.url_path %}">
                     {% for key in whitelist %}
@@ -33,7 +33,7 @@
                                         <label class="form-label fw-medium mb-0">
                                             {{ key }}
                                         </label>
-                                        <div class="save-indicator text-muted" style="display: none;">
+                                        <div class="save-indicator text-muted" style="visibility: hidden; opacity: 0;">
                                             <small><i class="bi bi-clock"></i> Saving...</small>
                                         </div>
                                     </div>
