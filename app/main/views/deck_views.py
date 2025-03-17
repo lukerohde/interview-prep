@@ -71,17 +71,46 @@ class DeckViewSet(viewsets.ModelViewSet):
                 with transaction.atomic():
                     deck = deck_form.save()
 
+                    # Keep track of processed documents to handle deletions
+                    processed_docs = set()
+
                     # Process multiple document fields
                     for key, value in request.POST.items():
                         if key.endswith('_content'):
                             document_name_key = key.replace('_content', '_name')
                             document_name = request.POST.get(document_name_key, 'Unnamed Document')
-                            Document.objects.create(
-                                name=document_name,
-                                content=value,
-                                owner=request.user,
-                                deck=deck
-                            )
+                            document_id_key = key.replace('_content', '_id')
+                            document_id = request.POST.get(document_id_key)
+
+                            if document_id:
+                                # Update existing document
+                                try:
+                                    document = Document.objects.get(id=document_id, deck=deck, owner=request.user)
+                                    document.content = value
+                                    document.name = document_name
+                                    document.save()
+                                    processed_docs.add(document.id)
+                                except Document.DoesNotExist:
+                                    # If document doesn't exist, create new one
+                                    document = Document.objects.create(
+                                        name=document_name,
+                                        content=value,
+                                        owner=request.user,
+                                        deck=deck
+                                    )
+                                    processed_docs.add(document.id)
+                            else:
+                                # Create new document
+                                document = Document.objects.create(
+                                    name=document_name,
+                                    content=value,
+                                    owner=request.user,
+                                    deck=deck
+                                )
+                                processed_docs.add(document.id)
+
+                    # Delete documents that were not in the form
+                    deck.documents.exclude(id__in=processed_docs).delete()
 
                     # Generate and save flashcards
                     created_cards = deck.generate_and_save_flashcards()
@@ -92,21 +121,17 @@ class DeckViewSet(viewsets.ModelViewSet):
 
                 return redirect('main:deck_detail', url_path=request.tutor.url_path, pk=deck.pk)
             except Exception as e:
-                error_msg = f"Error generating questions: {str(e)}"
-                logger.error(error_msg)
-                messages.error(request, "Failed to generate interview questions. Please try again.")
-                return render(request, 'main/deck_form.html', {
-                    'deck_form': deck_form,  # Contains the user's POST data
-                    'deck': deck,
-                    'tutor': request.tutor,
-                    'is_retry': True,
-                    'error_message': error_msg
-                })
+                logger.error(f"Error updating deck: {str(e)}")
+                messages.error(request, "There was an error updating your deck. Please try again.")
         else:
             messages.error(request, "There was an error with your form. Please correct the errors and try again.")
 
-        presenter = request.tutor.presenter()
-        return render(request, 'main/deck_form.html', {'deck_form': deck_form, 'deck': deck, 'tutor': request.tutor, 'presenter': presenter})
+        return render(request, 'main/deck_form.html', {
+            'form': deck_form,
+            'deck': deck,
+            'documents': deck.documents.all(),
+            'tutor': request.tutor
+        })
 
     @action(detail=True, methods=['post'])
     def generate_questions(self, request, pk=None, url_path=None):
@@ -154,9 +179,20 @@ def deck_create(request, url_path):
                     deck = form.save(commit=False)
                     deck.owner = request.user
                     deck.tutor = request.tutor
-                    #deck.deck_type = Deck.DeckType.STUDY
                     deck.status = 'active'
                     deck.save()
+
+                    # Process multiple document fields
+                    for key, value in request.POST.items():
+                        if key.endswith('_content'):
+                            document_name_key = key.replace('_content', '_name')
+                            document_name = request.POST.get(document_name_key, 'Unnamed Document')
+                            document = Document.objects.create(
+                                name=document_name,
+                                content=value,
+                                owner=request.user,
+                                deck=deck
+                            )
 
                     # Generate interview questions
                     try:
@@ -172,9 +208,9 @@ def deck_create(request, url_path):
                 messages.error(request, "There was an error creating your deck. Please try again.")
     else:
         form = DeckForm()
-        document_form = DocumentForm()
 
-    return render(request, 'main/deck_form.html', {'form': form, 'document_form': document_form, 'tutor': request.tutor})
+    presenter = request.tutor.presenter()
+    return render(request, 'main/deck_form.html', {'form': form, 'tutor': request.tutor, 'presenter': presenter})
 
 @login_required
 def deck_edit(request, url_path, pk):

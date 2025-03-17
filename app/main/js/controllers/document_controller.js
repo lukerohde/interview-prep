@@ -250,8 +250,8 @@ export default class extends Controller {
   createDocumentItem(file, index) {
     const fileType = file.name.split('.').pop().toLowerCase()
     const fileName = file.name
-    const uniqueId = `document_${index}`
-    const editorId = `editor-${Date.now()}-${index}`
+    const documentId = `document_${Date.now()}_${index}`
+    const editorId = `editor-${documentId}`
 
     const listItem = document.createElement("div")
     listItem.classList.add("mb-4", "document-item", "card")
@@ -269,8 +269,8 @@ export default class extends Controller {
           </div>
         </div>
         <div class="editor-container">
-          <textarea id="${editorId}" name="${uniqueId}_content" class="form-control" rows="10"></textarea>
-          <input type="hidden" name="${uniqueId}_name" value="${fileName}">
+          <textarea id="${editorId}" name="${documentId}_content" class="form-control" rows="10"></textarea>
+          <input type="hidden" name="${documentId}_name" value="${fileName}">
         </div>
       </div>
     `
