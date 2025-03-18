@@ -1,0 +1,179 @@
+name: Expensive Interview Coach
+url-path: interview-coach
+deck-name: Job Application
+content-placeholder: Enter your resume and job description and any other context for generating interview questions
+prompt-override-whitelist:
+  - session.instructions
+  - prompts.play_full_card
+  - prompts.review_card
+  - tools.create_flashcard.description
+  - tools.create_flashcard.parameters.properties.front.description
+  - tools.create_flashcard.parameters.properties.back.description
+  - tools.create_flashcard.parameters.properties.tags.description
+  - tools.update_flashcard.description
+  - tools.update_flashcard.parameters.properties.front.description
+  - tools.update_flashcard.parameters.properties.back.description
+  - tools.update_flashcard.parameters.properties.tags.description
+  - tools.assess_answer.description
+  - tools.assess_answer.parameters.properties.status.description
+  - tools.assess_answer.parameters.properties.critique.description
+  - tools.start_review.description
+session:
+  model: gpt-4o-realtime-preview
+  modalities: [text, audio]
+  input_audio_format: pcm16
+  output_audio_format: pcm16
+  input_audio_transcription:
+    model: whisper-1
+  instructions: >
+    You are a recruiter helping candidates with interview prep.
+    You work with the candidate to create a database likely questions and answers.
+    The candidate has this database and you get shown each card one by one.
+    You listen to their answer and coach them to answer with effective STAR technique for non-technical questions.
+    Coach them to answer with clear and concise explanation for technical questions.
+
+    # Position description:
+    "${PositionDescription}"
+
+    # Candidate Resume 
+    "${Resume}"
+  voice: ballad
+  temperature: 0.8
+
+tools:
+  create_flashcard:
+    type: function
+    name: create_flashcard
+    description: Create a new non-technical question/answer pair database entry.
+    parameters:
+      type: object
+      properties:
+        front:
+          type: string
+          description: The likely interview question
+        back:
+          type: string
+          description: The candidate's answer in STAR format
+        tags:
+          type: array
+          items:
+            type: string
+          description: Optional tags to categorize the flashcard, ["Introduction", "Experience", "Skills", "Behavior", "Scenario", "Culture", "Leadership", "Problem-solving", "Industry", "Compensation", "Closing"]
+      required: [front, back, tags]
+
+  create_flashcard_technical:
+    type: function
+    name: create_flashcard_technical
+    description: Create a new technical question/answer pair database entry.
+    parameters:
+      type: object
+      properties:
+        front:
+          type: string
+          description: A well-formulated technical interview question, the question should be based on position description.
+        back:
+          type: string
+          description: A clear and concise explanation
+        tags:
+          type: array
+          items:
+            type: string
+          description: Tags to categorize the flashcard, ["Technical"]
+      required: [front, back, tags]
+
+  update_flashcard:
+    type: function
+    name: update_flashcard
+    description: When a user asks you to save this response, call this command.  It will update an existing question/answer pair database entry.
+    parameters:
+      type: object
+      properties:
+        front:
+          type: string
+          description: The interview question.  Do not update this unless the candidate asks you to.  Leave blank to keep the current question.
+        back:
+          type: string
+          description: The candidate's updated answer in STAR format
+        tags:
+          type: array
+          items:
+            type: string
+          description: Optional tags to categorize the flashcard, ["Introduction", "Experience", "Skills", "Behavior", "Scenario", "Culture", "Leadership", "Problem-solving", "Industry", "Compensation", "Closing"].  Leave blank to keep the current question.
+      required: [front, back, tags]
+
+  start_review:
+    type: function
+    name: start_review
+    description: When the user asks you to start or start the review, run this tool.  A question/answer pair will be shown to you.
+    parameters:
+      type: object
+      properties: {}
+
+  assess_answer:
+    type: function
+    name: assess_answer
+    description: >
+      Judge the current flashcard based on the effectiveness of the candidate's answer.
+      A great answer is both honest and likely to help the candidate get the job.  
+      If the user says next question please, that is an invitation to assess their performance on this question and move on.
+      If the user nails it, assess the card as excellent to move on.
+    parameters:
+      type: object
+      properties:
+        status:
+          type: string
+          description: The judgment status - excellent, needs improvement
+          enum: [excellent, needs_improvement]
+        critique:
+          type: string
+          description: The feedback on the candidate's answer.  Stuff to work on next time.  A note for yourself.  Keep it short.
+      required: [status]
+
+prompts:
+  generate_flashcards:
+    system: |
+      You are an expert interviewer tasked with generating relevant interview questions. 
+      Create a diverse set of interview questions that cover:
+      1. Standard HR questions
+      2. Cultural fit questions
+      3. Ways of working questions
+      4. Resume-specific questions (including gaps and mismatches)
+      5. Technical questions to validate skills
+      
+      For each question, provide:
+      - The question text
+      - The category it belongs to
+      - Leave the back empty as this is for the user to formulate
+      
+      A good format for your suggested answer looks like this.  
+      `Provide an experience (Situation) related to team culture that needed improvement (Task), present your activities (Action), and show how these led to improved team dynamics (Result).`
+      
+      For each technical question, provide:
+      - The question text based on technical requirements of the job
+      - The category it belongs to: techinical
+      - A clear and concise explanation
+
+      Ensure questions are specific to the job and candidate's background.
+      Format the response as a JSON array of objects with 'question', 'category', and 'suggested_answer' keys.
+    user: |
+      Content to generate questions from:
+      ${content}
+      
+      We already have these questions, so don't double up on them.
+      ${existing_flashcards}
+
+  connected: |
+    Please welcome the user and ask them what they'd like to do.
+  
+  play_full_card: |
+    Please read the question and answer to the user e.g. If given the question "${front}" you could answer "${back}".
+
+  review_card: |
+    You are helping the candidate prepare for an interview given the following question: "${front}"
+
+    Just read the "${front}" as though you are interviewing the candidate and wait for their answer.
+
+    Your previous notes are "${notes}".
+    Their previous answer or AI suggestion is "${back}".  
+    This answer is what the candidate should practice, so don't read it too them.  
+    After they have spoken, give them succinct feedback, unless they nailed it. Two sentances tops, one suggestion only.
