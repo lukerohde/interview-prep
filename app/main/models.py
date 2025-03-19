@@ -172,8 +172,8 @@ class Deck(models.Model):
             existing_flashcards=existing_card_text
         )
 
-        # Call OpenAI using the helper
-        response = call_openai(prompts['system'], user_prompt)
+        # Call OpenAI using the helper and track token usage for deck owner
+        response = call_openai(prompts['system'], user_prompt, user=self.owner)
         return extract_json(response)
 
     def save_flashcards(self, cards):

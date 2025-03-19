@@ -8,8 +8,11 @@
     data-deck-generate-questions-url-template-value="{% url 'main:api-deck-generate-questions' url_path=tutor.url_path pk=deck.pk %}"
     data-voice-chat-auto-connect-value="true" 
     data-voice-chat-session-url-value="{% url 'main:api-voice-chat-session' tutor_path=tutor.url_path %}" 
-    data-flashcard-csrf-token-value="{{ csrf_token }}"
+    data-voice-chat-billing-url-value="{% url 'billing:add_token_usage' %}" 
+    data-voice-chat-user-balance-value="{{ request.user.billing_profile.balance|default:'0.00' }}"
+    data-voice-chat-csrf-token-value="{{ csrf_token }}"
     data-controller="flashcard" 
+    data-flashcard-csrf-token-value="{{ csrf_token }}"
     data-flashcard-api-url-value="{% url 'main:api-flashcard-list' deck_pk=deck.pk %}"
     data-flashcard-next-review-url-value="{% url 'main:api-flashcard-next-review' deck_pk=deck.pk %}"
     data-flashcard-review-url-template-value="{% url 'main:api-flashcard-review' deck_pk=deck.pk pk=':id' %}"
@@ -31,6 +34,11 @@
 
       <!-- Transcript Area -->
       <div id="transcript-container" data-controller="transcript" class="transcript-container bg-white rounded border flex-grow-1 mb-3 overflow-auto" data-transcript-target="container">
+        <div class="d-flex justify-content-between sticky-top bg-white p-2">
+          <div>Session cost: <span data-voice-chat-cost-value="0" data-voice-chat-target="cost">$0.00</span></div>
+          <div>Credit balance: <span data-voice-chat-target="balance">${{ request.user.billing_profile.balance|floatformat:2|default:'0.00' }}</span></div>
+        </div>
+        
         <!-- Voice Button -->
         <div class="sticky-top" style="z-index: 1020;">
           <div class="d-flex justify-content-end p-3 gap-2 align-items-center">

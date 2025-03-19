@@ -1,5 +1,5 @@
 name: Expensive Interview Coach
-url-path: interview-coach
+url-path: interview-coach-expensive
 deck-name: Job Application
 content-placeholder: Enter your resume and job description and any other context for generating interview questions
 prompt-override-whitelist:

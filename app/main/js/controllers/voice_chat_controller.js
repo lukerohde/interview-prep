@@ -1,11 +1,21 @@
 import { Controller } from "@hotwired/stimulus"
+import { postWithToken } from "../../../static/js/utils/csrf.js"
 
 export default class extends Controller {
-  static targets = ["walkieButton", "micSelect", "status"]
+  static targets = ["walkieButton", "micSelect", "status", "cost", "balance"]
   static values = {
+    cost: { type: String, default: '0.00' },
     sessionUrl: String,
     autoConnect: Boolean,
-    baseUrl: { type: String, default: 'https://api.openai.com/v1/realtime' }
+    baseUrl: { type: String, default: 'https://api.openai.com/v1/realtime' },
+    billingUrl: String,
+    userBalance: { type: String, default: '0.00' },
+    csrfToken: String
+  }
+  
+  // Add message action to handle events in addition to WebRTC data channel
+  static actions = {
+    "message": "handleMessage"
   }
 
   registeredTools = []
@@ -453,7 +463,8 @@ export default class extends Controller {
 
   handleMessage(event) {
     const message = JSON.parse(event.data);
-
+    console.log(message)
+        
     // Handle different message types
     switch (message.type) {
       case 'conversation.item.input_audio_transcription.completed':
@@ -475,9 +486,23 @@ export default class extends Controller {
         break;
 
       case 'response.done':
-      case 'response.function_call_arguments.done':
+      //case 'response.function_call_arguments.done':
+        let u = message.response.usage
+        let input_tokens = u.input_token_details.audio_tokens + u.input_token_details.text_tokens
+        let input_tokens_cached = u.input_token_details.cached_tokens
+        let output_tokens = u.output_tokens
+        
+        // Post token usage to billing endpoint
+        if (this.hasBillingUrlValue) {
+          this.postTokenUsage({
+            model_name: 'gpt-4o-mini-realtime-preview',
+            input_tokens: input_tokens,
+            input_tokens_cached: input_tokens_cached,
+            output_tokens: output_tokens
+          });
+        }
+
         // Handle function calls in the response
-        console.log(message)
         if (message.response && message.response.output) {
           message.response.output.forEach(item => {
             if (item.type === 'function_call' && item.status === 'completed') {
@@ -706,6 +731,45 @@ export default class extends Controller {
       this.updateStatus('Hold to talk or tap to toggle', 'info');
     } else {
       this.updateStatus('Channel open (tap to mute)', 'info');
+    }
+  }
+  
+  /**
+   * Post token usage to the billing endpoint
+   * @param {Object} data - Token usage data
+   * @param {string} data.model_name - Model name
+   * @param {number} data.input_tokens - Input tokens
+   * @param {number} data.input_tokens_cached - Cached input tokens
+   * @param {number} data.output_tokens - Output tokens
+   */
+  async postTokenUsage(data) {
+    if (!this.hasBillingUrlValue) {
+      console.warn('Billing URL not provided');
+      return;
+    }
+    
+    try {
+      // Post to billing endpoint with CSRF token
+      const response = await postWithToken(this.billingUrlValue, data, this.csrfTokenValue);
+      
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Update cost display with server-calculated cost
+        if (result.cost !== undefined) {
+          this.costValue = parseFloat(this.costValue) + result.cost;
+          this.costTarget.textContent = '$' + parseFloat(this.costValue).toFixed(2);
+        }
+        
+        // Update balance display with server-provided balance
+        if (this.hasBalanceTarget && result.balance !== undefined) {
+          this.balanceTarget.textContent = '$' + parseFloat(result.balance).toFixed(2);
+        }
+      } else {
+        console.error('Failed to post token usage:', await response.text());
+      }
+    } catch (error) {
+      console.error('Error posting token usage:', error);
     }
   }
 }

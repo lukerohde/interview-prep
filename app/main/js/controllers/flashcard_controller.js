@@ -1,4 +1,5 @@
 import { Controller } from "@hotwired/stimulus"
+import { postWithToken } from "../../../static/js/utils/csrf.js"
 
 export default class extends Controller {
   static targets = ["previewContainer", "reviewContainer"]
@@ -51,11 +52,11 @@ export default class extends Controller {
 
   async createFlashcard(args) {
     try {
-      const response = await this.postWithToken(this.apiUrlValue, {
+      const response = await postWithToken(this.apiUrlValue, {
         front: args.front,
         back: args.back,
         tags: args.tags || []
-      })
+      }, this.csrfTokenValue)
       const flashcard = await response.json()
       this.appendFlashcard(flashcard)
     } catch (error) {
@@ -92,13 +93,14 @@ export default class extends Controller {
         show_both: 'false'
       })
 
-      const response = await this.postWithToken(
+      const response = await postWithToken(
         `${this.apiUrlValue}${reviewCard.dataset.flashcardId}/?${params}`,
         {
           front: args.front,
           back: args.back,
           tags: args.tags || []
         },
+        this.csrfTokenValue,
         'PUT'
       )
 
@@ -127,7 +129,7 @@ export default class extends Controller {
     }
 
     try {
-      const response = await this.postWithToken(
+      const response = await postWithToken(
         this.apiUrlValue + this.currentEditCard.dataset.flashcardId + '/',
         {
           front: args.front,
@@ -136,6 +138,7 @@ export default class extends Controller {
           back_notes: args.back_notes,
           tags: args.tags || []
         },
+        this.csrfTokenValue,
         'PUT'
       )
 
@@ -368,13 +371,14 @@ export default class extends Controller {
     console.log('Posting judgment:', { status, notes, cardData: card?.dataset })
     console.log(this.reviewUrlTemplateValue)
     try {
-      const response = await this.postWithToken(
+      const response = await postWithToken(
         this.reviewUrlTemplateValue.replace(':id', card.dataset.flashcardId),
         {
           status: status,
           side: card.dataset.flashcardSide,
           notes: notes
-        }
+        },
+        this.csrfTokenValue
       )
       
       if (!response.ok) throw new Error('Failed to update review')
@@ -413,9 +417,10 @@ export default class extends Controller {
     const cardId = card.dataset.flashcardId
 
     try {
-      const response = await this.postWithToken(
+      const response = await postWithToken(
         this.deleteUrlTemplateValue.replace(':id', cardId),
         {},
+        this.csrfTokenValue,
         'DELETE'
       )
 
@@ -439,21 +444,5 @@ export default class extends Controller {
     } catch (error) {
       console.error('Error deleting flashcard:', error)
     }
-  }
-
-  async postWithToken(url, data, method = 'POST') {
-    if (!this.csrfTokenValue) {
-      throw new Error('CSRF token not found')
-    }
-
-    return fetch(url, {
-      method: method,
-      credentials: 'same-origin',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': this.csrfTokenValue,
-      },
-      body: JSON.stringify(data)
-    })
   }
 }

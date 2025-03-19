@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Session History{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Session History</h1>
+    
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">All Usage Sessions</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Start Time</th>
+                        <th>End Time</th>
+                        <th>Duration</th>
+                        <th>Tokens</th>
+                        <th>Cost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for session in sessions %}
+                    <tr>
+                        <td>{{ session.created_at|date:"M d, Y" }}</td>
+                        <td>{{ session.created_at|date:"H:i:s" }}</td>
+                        <td>{{ session.updated_at|date:"H:i:s" }}</td>
+                        <td>{{ session.duration|floatformat:1 }} min</td>
+                        <td>{{ session.total_tokens }}</td>
+                        <td>${{ session.cost|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">No sessions found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="mt-3">
+        <a href="{% url 'billing:billing_dashboard' %}" class="btn btn-primary">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}
