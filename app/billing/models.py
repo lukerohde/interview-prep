@@ -62,7 +62,7 @@ class BillingProfile(models.Model):
         """
         if amount <= 0:
             raise ValueError("Amount must be positive")
-        
+
         if self.balance < amount:
             # Handle insufficient credits
             if self.auto_recharge_enabled and self.auto_recharge_amount > 0:
@@ -122,6 +122,9 @@ class BillingProfile(models.Model):
             Decimal: Current balance after usage
         """
         # Get token costs from settings
+        if input_tokens <= 0 or input_tokens_cached <= 0 or output_tokens <= 0:
+            raise ValueError("Token counts must be positive")
+
         input_cost = BillingSettings.get_token_cost(model_name, 'input')
         input_cached_cost = BillingSettings.get_token_cost(model_name, 'input-cached')
         output_cost = BillingSettings.get_token_cost(model_name, 'output')
@@ -138,7 +141,8 @@ class BillingProfile(models.Model):
         total_tokens = input_tokens + input_tokens_cached + output_tokens
         
         # Use credits and update session
-        return self.use_credits(cost, session, total_tokens)
+        balance = self.use_credits(cost, session, total_tokens)
+        return cost, balance
 
 
 class Session(models.Model):
@@ -256,20 +260,23 @@ class BillingSettings(models.Model):
             Decimal: Cost per million tokens
         """
         key = f"{model_name}-{token_type}-cost"
-        try:
-            item = BillingSettingItem.objects.get(key=key)
-            return item.value
-        except BillingSettingItem.DoesNotExist:
-            # Return default values if not found - use the highest price as a fallback
-            # This ensures we don't undercharge if a specific model's pricing isn't found
-            defaults = {
-                # GPT-4o-realtime-preview prices 2025-03-19 https://platform.openai.com/docs/pricing
-                'input': Decimal('5.00'),       # Default input token cost
-                'input-cached': Decimal('2.50'),  # Default cached input token cost
-                'output': Decimal('20.00')        # Default output token cost
-            }
-            # Extract the token type from the key
-            return defaults.get(token_type, Decimal('20.00'))  # Default to highest price if token type unknown
+        item = BillingSettingItem.objects.get(key=key)
+        return item.value
+        
+        # try:
+        #     item = BillingSettingItem.objects.get(key=key)
+        #     return item.value
+        # except BillingSettingItem.DoesNotExist:
+        #     # Return default values if not found - use the highest price as a fallback
+        #     # This ensures we don't undercharge if a specific model's pricing isn't found
+        #     defaults = {
+        #         # GPT-4o-realtime-preview prices 2025-03-19 https://platform.openai.com/docs/pricing
+        #         'input': Decimal('5.00'),       # Default input token cost
+        #         'input-cached': Decimal('2.50'),  # Default cached input token cost
+        #         'output': Decimal('20.00')        # Default output token cost
+        #     }
+        #     # Extract the token type from the key
+        #     return defaults.get(token_type, Decimal('20.00'))  # Default to highest price if token type unknown
     
     def __str__(self):
         return "Global Billing Settings"
