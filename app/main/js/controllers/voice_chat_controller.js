@@ -1,8 +1,9 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["walkieButton", "micSelect", "status"]
+  static targets = ["walkieButton", "micSelect", "status", "cost"]
   static values = {
+    cost: { type: String, default: '0.00' },
     sessionUrl: String,
     autoConnect: Boolean,
     baseUrl: { type: String, default: 'https://api.openai.com/v1/realtime' }
@@ -453,7 +454,8 @@ export default class extends Controller {
 
   handleMessage(event) {
     const message = JSON.parse(event.data);
-
+    console.log(message)
+        
     // Handle different message types
     switch (message.type) {
       case 'conversation.item.input_audio_transcription.completed':
@@ -475,9 +477,29 @@ export default class extends Controller {
         break;
 
       case 'response.done':
-      case 'response.function_call_arguments.done':
+      //case 'response.function_call_arguments.done':
+        let u = message.response.usage
+        let input_tokens = u.input_token_details.audio_tokens + u.input_token_details.text_tokens
+        let input_tokens_cached = u.input_token_details.cached_tokens
+        let output_tokens = u.output_tokens
+
+        let cost = ((input_tokens * 0.60) + (input_tokens_cached * 0.30) + (output_tokens * 2.40)) / 1000000
+        console.log(`Input tokens: ${input_tokens}, Cached tokens: ${input_tokens_cached}, Output tokens: ${output_tokens}, Cost: $${cost.toFixed(6)}`);
+        
+        // gpt-4o-mini-realtime-preview
+        // input $0.60
+        // input-cached$0.30
+        // output $2.40
+
+        // gpt-4o-realtime-preview
+        // input $5.00
+        // input-cached $2.50
+        // output $20.00
+        this.costValue = parseFloat(this.costValue) + cost;
+        console.log(this.costValue)
+        this.costTarget.textContent = '$' + parseFloat(this.costValue).toFixed(2);
+
         // Handle function calls in the response
-        console.log(message)
         if (message.response && message.response.output) {
           message.response.output.forEach(item => {
             if (item.type === 'function_call' && item.status === 'completed') {

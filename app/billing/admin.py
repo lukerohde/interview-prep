@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import BillingProfile, Session, Transaction
+from .models import BillingProfile, Session, Transaction, BillingSettings
 
 
 @admin.register(BillingProfile)
@@ -24,3 +24,16 @@ class TransactionAdmin(admin.ModelAdmin):
     search_fields = ('billing_profile__user__username', 'billing_profile__user__email', 'description')
     readonly_fields = ('created_at',)
     list_filter = ('transaction_type', 'created_at')
+
+
+@admin.register(BillingSettings)
+class BillingSettingsAdmin(admin.ModelAdmin):
+    list_display = ('signup_credits',)
+    
+    def has_add_permission(self, request):
+        # Only allow one instance of BillingSettings
+        return not BillingSettings.objects.exists()
+    
+    def has_delete_permission(self, request, obj=None):
+        # Prevent deletion of the settings object
+        return False

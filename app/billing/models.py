@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from django.conf import settings
 from decimal import Decimal
 from uuid import uuid4
 
@@ -154,3 +155,34 @@ class Transaction(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+
+
+class BillingSettings(models.Model):
+    """
+    Singleton model for global billing settings.
+    This allows administrators to configure billing settings through the admin interface.
+    """
+    signup_credits = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=Decimal('0.00'),
+        help_text="Default credits to grant to new users upon signup. Set to zero to disable signup credits."
+    )
+    
+    class Meta:
+        verbose_name = "Billing Settings"
+        verbose_name_plural = "Billing Settings"
+    
+    def save(self, *args, **kwargs):
+        """Ensure only one instance of BillingSettings exists"""
+        self.pk = 1
+        super().save(*args, **kwargs)
+    
+    @classmethod
+    def load(cls):
+        """Get the singleton settings object or create it if it doesn't exist"""
+        obj, created = cls.objects.get_or_create(pk=1)
+        return obj
+    
+    def __str__(self):
+        return "Global Billing Settings"

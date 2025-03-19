@@ -1,8 +1,9 @@
 import pytest
 from decimal import Decimal
-from django.test import Client
+from django.test import Client, override_settings
+from django.contrib.auth.models import User
 from .factories import UserFactory
-from billing.models import BillingProfile, Transaction, Session
+from billing.models import BillingProfile, Transaction, Session, BillingSettings
 
 pytestmark = pytest.mark.django_db
 
@@ -202,3 +203,60 @@ def test_session_add_usage_with_tokens(user):
     session.refresh_from_db()
     assert session.cost == cost + additional_cost
     assert session.total_tokens == tokens + additional_tokens
+
+
+def test_user_receives_no_signup_credits_by_default():
+    """Test that a new user receives no signup credits by default."""
+    # Ensure BillingSettings exists with default value (0)
+    BillingSettings.load()
+    
+    # Create a new user directly (not using the factory to ensure signals run)
+    user = User.objects.create_user(
+        username='credituser',
+        email='credituser@example.com',
+        password='password123'
+    )
+    
+    # Get the billing profile created by the signal
+    billing_profile = BillingProfile.objects.get(user=user)
+    
+    # Verify the user received no credits by default
+    assert billing_profile.total_credits == Decimal('0.00')
+    
+    # Verify no promotion transaction was created
+    transaction = Transaction.objects.filter(
+        billing_profile=billing_profile,
+        transaction_type='promotion'
+    ).first()
+    
+    assert transaction is None
+
+
+def test_user_receives_admin_configured_signup_credits():
+    """Test that a new user receives the signup credits configured in the admin."""
+    # Create or update the billing settings
+    billing_settings = BillingSettings.load()
+    billing_settings.signup_credits = Decimal('50.00')
+    billing_settings.save()
+    
+    # Create a new user
+    user = User.objects.create_user(
+        username='admincredituser',
+        email='admincredituser@example.com',
+        password='password123'
+    )
+    
+    # Get the billing profile created by the signal
+    billing_profile = BillingProfile.objects.get(user=user)
+    
+    # Verify the user received the admin-configured credits
+    assert billing_profile.total_credits == Decimal('50.00')
+    
+    # Verify a promotion transaction was created
+    transaction = Transaction.objects.filter(
+        billing_profile=billing_profile,
+        transaction_type='promotion'
+    ).first()
+    
+    assert transaction is not None
+    assert transaction.amount == Decimal('50.00')

@@ -233,3 +233,5 @@ LOGGING = {
 # }
 
 ACCOUNT_ADAPTER = 'config.account_adapter.InviteOnlyAccountAdapter'
+
+# Billing settings are managed through the BillingSettings model in the admin interface
