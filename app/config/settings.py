@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',  # Example provider
     'whitenoise.runserver_nostatic', # disable django static file serving so whitenoise can work
     'main',
+    'billing',  # Billing app for user credits and usage tracking
 ]
 
 MIDDLEWARE = [

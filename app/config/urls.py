@@ -35,7 +35,11 @@ urlpatterns = [
     # Other allauth URLs
     path('accounts/', include('allauth.urls')),
     
+    # Main app URLs
     path('', include('main.urls')),
+    
+    # Billing app URLs
+    path('billing/', include('billing.urls')),
 ]
 
 if settings.DEBUG:
