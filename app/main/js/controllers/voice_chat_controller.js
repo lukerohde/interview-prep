@@ -12,6 +12,11 @@ export default class extends Controller {
     userBalance: { type: String, default: '0.00' },
     csrfToken: String
   }
+  
+  // Add message action to handle events in addition to WebRTC data channel
+  static actions = {
+    "message": "handleMessage"
+  }
 
   registeredTools = []
 

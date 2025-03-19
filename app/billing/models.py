@@ -17,7 +17,7 @@ class BillingProfile(models.Model):
     auto_recharge_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     monthly_recharge_limit = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     total_credits = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    total_usage = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    total_usage = models.DecimalField(max_digits=10, decimal_places=6, default=Decimal('0.00'))
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -33,7 +33,7 @@ class BillingProfile(models.Model):
         """
         Add credits to the user's account and create a transaction record
         """
-        if amount <= 0:
+        if amount < 0:
             raise ValueError("Amount must be positive")
         
         self.total_credits += amount
@@ -60,7 +60,7 @@ class BillingProfile(models.Model):
         Returns:
             Decimal: Current balance after usage
         """
-        if amount <= 0:
+        if amount < 0:
             raise ValueError("Amount must be positive")
 
         if self.balance < amount:
@@ -122,7 +122,7 @@ class BillingProfile(models.Model):
             Decimal: Current balance after usage
         """
         # Get token costs from settings
-        if input_tokens <= 0 or input_tokens_cached <= 0 or output_tokens <= 0:
+        if input_tokens < 0 or input_tokens_cached < 0 or output_tokens < 0:
             raise ValueError("Token counts must be positive")
 
         input_cost = BillingSettings.get_token_cost(model_name, 'input')
@@ -153,7 +153,7 @@ class Session(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     billing_profile = models.ForeignKey(BillingProfile, on_delete=models.CASCADE, related_name='sessions')
     total_tokens = models.IntegerField(default=0)
-    cost = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+    cost = models.DecimalField(max_digits=10, decimal_places=6, default=Decimal('0.00'))
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
