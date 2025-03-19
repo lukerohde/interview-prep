@@ -19,7 +19,7 @@ prompt-override-whitelist:
   - tools.assess_answer.parameters.properties.critique.description
   - tools.start_review.description
 session:
-  model: gpt-4o-mini-realtime-preview-2024-12-17
+  model: gpt-4o-mini-realtime-preview
   modalities: [text, audio]
   input_audio_format: pcm16
   output_audio_format: pcm16

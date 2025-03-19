@@ -293,7 +293,7 @@ def test_add_token_usage_calculates_cost_correctly(user):
     expected_cost = expected_cost.quantize(Decimal('0.000001'))
     
     # Add token usage
-    new_balance = billing_profile.add_token_usage(
+    calculated_cost, new_balance = billing_profile.add_token_usage(
         model_name, 
         input_tokens, 
         input_tokens_cached, 
@@ -304,6 +304,7 @@ def test_add_token_usage_calculates_cost_correctly(user):
     billing_profile.refresh_from_db()
     assert billing_profile.balance == initial_balance - expected_cost
     assert new_balance == initial_balance - expected_cost
+    assert calculated_cost == expected_cost
     
     # Verify a session was created with the correct token count
     latest_session = Session.objects.filter(

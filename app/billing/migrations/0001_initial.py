@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
                 ('auto_recharge_amount', models.DecimalField(decimal_places=2, default=Decimal('0.00'), max_digits=10)),
                 ('monthly_recharge_limit', models.DecimalField(decimal_places=2, default=Decimal('0.00'), max_digits=10)),
                 ('total_credits', models.DecimalField(decimal_places=2, default=Decimal('0.00'), max_digits=10)),
-                ('total_usage', models.DecimalField(decimal_places=2, default=Decimal('0.00'), max_digits=10)),
+                ('total_usage', models.DecimalField(decimal_places=6, default=Decimal('0.00'), max_digits=10)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='billing_profile', to=settings.AUTH_USER_MODEL)),
@@ -35,7 +35,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
                 ('total_tokens', models.IntegerField(default=0)),
-                ('cost', models.DecimalField(decimal_places=2, default=Decimal('0.00'), max_digits=10)),
+                ('cost', models.DecimalField(decimal_places=6, default=Decimal('0.000000'), max_digits=10)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('billing_profile', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='sessions', to='billing.billingprofile')),

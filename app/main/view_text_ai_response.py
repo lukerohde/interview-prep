@@ -15,4 +15,4 @@ class TextAIResponseViewSet(ViewSet):
       
       if not developer_prompt or not user_prompt:
           return Response({'error': 'Both developer_prompt and user_prompt are required'}, status=HTTPStatus.UNPROCESSABLE_CONTENT)
-      return Response({'response': call_openai(developer_prompt, user_prompt)}, status=HTTPStatus.CREATED)
+      return Response({'response': call_openai(developer_prompt, user_prompt, user=request.user)}, status=HTTPStatus.CREATED)
