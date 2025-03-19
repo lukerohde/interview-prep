@@ -48,9 +48,17 @@ class BillingProfile(models.Model):
         
         return self.balance
     
-    def use_credits(self, amount, session=None):
+    def use_credits(self, amount, session=None, tokens=0):
         """
         Use credits and update the appropriate session
+        
+        Args:
+            amount (Decimal): Amount of credits to use
+            session (Session, optional): Session to update. If None, finds recent session or creates new one.
+            tokens (int, optional): Number of tokens used in this transaction
+            
+        Returns:
+            Decimal: Current balance after usage
         """
         if amount <= 0:
             raise ValueError("Amount must be positive")
@@ -74,13 +82,13 @@ class BillingProfile(models.Model):
             else:
                 raise ValueError("Insufficient credits")
         
-        # Update total usage
+        # Update total usage (balance is calculated as total_credits - total_usage)
         self.total_usage += amount
-        self.save()
+        self.save() # TODO Make this a transaction! 
         
         # Update or create session
         if session:
-            session.add_usage(amount)
+            session.add_usage(amount, tokens)
         else:
             # Check for recent session
             recent_session = self.sessions.filter(
@@ -88,16 +96,49 @@ class BillingProfile(models.Model):
             ).order_by('-updated_at').first()
             
             if recent_session:
-                recent_session.add_usage(amount)
+                recent_session.add_usage(amount, tokens)
             else:
                 # Create new session
                 Session.objects.create(
                     billing_profile=self,
                     cost=amount,
-                    total_tokens=0  # This would need to be calculated based on your token pricing
+                    total_tokens=tokens
                 )
         
         return self.balance
+        
+    def add_token_usage(self, model_name, input_tokens, input_tokens_cached, output_tokens, session=None):
+        """
+        Add token usage to the user's account and calculate the cost
+        
+        Args:
+            model_name (str): The model name (e.g., 'gpt-4o-mini-realtime-preview')
+            input_tokens (int): Number of input tokens
+            input_tokens_cached (int): Number of cached input tokens
+            output_tokens (int): Number of output tokens
+            session (Session, optional): Session to update. If None, finds recent session or creates new one.
+            
+        Returns:
+            Decimal: Current balance after usage
+        """
+        # Get token costs from settings
+        input_cost = BillingSettings.get_token_cost(model_name, 'input')
+        input_cached_cost = BillingSettings.get_token_cost(model_name, 'input-cached')
+        output_cost = BillingSettings.get_token_cost(model_name, 'output')
+        
+        # Calculate total cost in dollars
+        cost = ((input_tokens * input_cost) + 
+                (input_tokens_cached * input_cached_cost) + 
+                (output_tokens * output_cost)) / Decimal('1000000')
+        
+        # Round to 6 decimal places for precision in billing
+        cost = cost.quantize(Decimal('0.000001'))
+        
+        # Total tokens used
+        total_tokens = input_tokens + input_tokens_cached + output_tokens
+        
+        # Use credits and update session
+        return self.use_credits(cost, session, total_tokens)
 
 
 class Session(models.Model):
@@ -157,6 +198,24 @@ class Transaction(models.Model):
         ordering = ['-created_at']
 
 
+class BillingSettingItem(models.Model):
+    """
+    Key-value pairs for billing settings.
+    This allows for flexible configuration of token costs and other billing parameters.
+    """
+    key = models.CharField(max_length=100)
+    value = models.DecimalField(max_digits=10, decimal_places=6)
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.key}: {self.value}"
+    
+    class Meta:
+        unique_together = ('key',)
+
+
 class BillingSettings(models.Model):
     """
     Singleton model for global billing settings.
@@ -183,6 +242,34 @@ class BillingSettings(models.Model):
         """Get the singleton settings object or create it if it doesn't exist"""
         obj, created = cls.objects.get_or_create(pk=1)
         return obj
+    
+    @staticmethod
+    def get_token_cost(model_name, token_type):
+        """
+        Get the cost per million tokens for a specific model and token type
+        
+        Args:
+            model_name (str): The model name (e.g., 'gpt-4o-mini-realtime-preview')
+            token_type (str): The token type (e.g., 'input', 'input-cached', 'output')
+            
+        Returns:
+            Decimal: Cost per million tokens
+        """
+        key = f"{model_name}-{token_type}-cost"
+        try:
+            item = BillingSettingItem.objects.get(key=key)
+            return item.value
+        except BillingSettingItem.DoesNotExist:
+            # Return default values if not found - use the highest price as a fallback
+            # This ensures we don't undercharge if a specific model's pricing isn't found
+            defaults = {
+                # GPT-4o-realtime-preview prices 2025-03-19 https://platform.openai.com/docs/pricing
+                'input': Decimal('5.00'),       # Default input token cost
+                'input-cached': Decimal('2.50'),  # Default cached input token cost
+                'output': Decimal('20.00')        # Default output token cost
+            }
+            # Extract the token type from the key
+            return defaults.get(token_type, Decimal('20.00'))  # Default to highest price if token type unknown
     
     def __str__(self):
         return "Global Billing Settings"

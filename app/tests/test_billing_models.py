@@ -94,9 +94,10 @@ def test_billing_profile_use_credits(user):
         billing_profile=billing_profile
     ).count()
     
-    # Use credits
+    # Use credits with tokens
     amount = Decimal('30.00')
-    billing_profile.use_credits(amount)
+    tokens = 3000
+    billing_profile.use_credits(amount, tokens=tokens)
     
     # Verify usage was updated
     billing_profile.refresh_from_db()
@@ -115,7 +116,7 @@ def test_billing_profile_use_credits(user):
         billing_profile=billing_profile
     ).latest('created_at')
     assert latest_session.cost == amount
-    # Note: In the current implementation, tokens are not set when creating a session through use_credits
+    assert latest_session.total_tokens == tokens  # Verify tokens were recorded
 
 def test_billing_profile_use_credits_with_existing_session(user):
     """Test using credits with an existing session."""
@@ -126,9 +127,10 @@ def test_billing_profile_use_credits_with_existing_session(user):
     billing_profile.add_credits(Decimal('100.00'))
     
     # Create a session
+    initial_tokens = 500
     session = Session.objects.create(
         billing_profile=billing_profile,
-        total_tokens=500,
+        total_tokens=initial_tokens,
         cost=Decimal('5.00')
     )
     
@@ -137,9 +139,10 @@ def test_billing_profile_use_credits_with_existing_session(user):
         billing_profile=billing_profile
     ).count()
     
-    # Use credits with the existing session
+    # Use credits with the existing session and additional tokens
     additional_amount = Decimal('15.00')
-    billing_profile.use_credits(additional_amount, session=session)
+    additional_tokens = 1500
+    billing_profile.use_credits(additional_amount, session=session, tokens=additional_tokens)
     
     # Verify no new session was created
     new_session_count = Session.objects.filter(
@@ -150,7 +153,7 @@ def test_billing_profile_use_credits_with_existing_session(user):
     # Verify the session was updated correctly
     session.refresh_from_db()
     assert session.cost == Decimal('20.00')  # 5.00 + 15.00
-    # Note: In the current implementation, tokens are not updated when using an existing session
+    assert session.total_tokens == initial_tokens + additional_tokens  # Verify tokens were added
 
 def test_billing_profile_balance_calculation(user):
     """Test that the balance property correctly calculates credits minus usage."""
@@ -260,3 +263,143 @@ def test_user_receives_admin_configured_signup_credits():
     
     assert transaction is not None
     assert transaction.amount == Decimal('50.00')
+
+
+
+
+
+def test_add_token_usage_calculates_cost_correctly(user):
+    """Test that add_token_usage calculates costs correctly based on token usage."""
+    # Get the billing profile created by the signal
+    billing_profile = BillingProfile.objects.get(user=user)
+    
+    # Add some initial credits
+    billing_profile.add_credits(Decimal('100.00'))
+    initial_balance = billing_profile.balance
+    
+    # Define token usage
+    model_name = 'gpt-4o-mini-realtime-preview'
+    input_tokens = 1000
+    input_tokens_cached = 500
+    output_tokens = 800
+    
+    # Calculate expected cost using token costs from database
+    # Cost per million tokens * tokens / 1,000,000
+    expected_cost = (
+        (BillingSettings.get_token_cost(model_name, 'input') * input_tokens) + 
+        (BillingSettings.get_token_cost(model_name, 'input-cached') * input_tokens_cached) + 
+        (BillingSettings.get_token_cost(model_name, 'output') * output_tokens)
+    ) / Decimal('1000000')
+    expected_cost = expected_cost.quantize(Decimal('0.000001'))
+    
+    # Add token usage
+    new_balance = billing_profile.add_token_usage(
+        model_name, 
+        input_tokens, 
+        input_tokens_cached, 
+        output_tokens
+    )
+    
+    # Verify the balance was updated correctly
+    billing_profile.refresh_from_db()
+    assert billing_profile.balance == initial_balance - expected_cost
+    assert new_balance == initial_balance - expected_cost
+    
+    # Verify a session was created with the correct token count
+    latest_session = Session.objects.filter(
+        billing_profile=billing_profile
+    ).latest('created_at')
+    assert latest_session.cost == expected_cost
+    assert latest_session.total_tokens == input_tokens + input_tokens_cached + output_tokens
+
+
+def test_add_token_usage_with_existing_session(user):
+    """Test adding token usage to an existing session."""
+    # Get the billing profile created by the signal
+    billing_profile = BillingProfile.objects.get(user=user)
+    
+    # Add some initial credits
+    billing_profile.add_credits(Decimal('100.00'))
+    
+    # Create a session
+    initial_tokens = 1000
+    initial_cost = Decimal('0.01')
+    session = Session.objects.create(
+        billing_profile=billing_profile,
+        total_tokens=initial_tokens,
+        cost=initial_cost
+    )
+    
+    # Define token usage
+    model_name = 'gpt-4o-mini-realtime-preview'
+    input_tokens = 2000
+    input_tokens_cached = 1000
+    output_tokens = 1500
+    
+    # Calculate expected cost using token costs from database
+    expected_additional_cost = (
+        (BillingSettings.get_token_cost(model_name, 'input') * input_tokens) + 
+        (BillingSettings.get_token_cost(model_name, 'input-cached') * input_tokens_cached) + 
+        (BillingSettings.get_token_cost(model_name, 'output') * output_tokens)
+    ) / Decimal('1000000')
+    expected_additional_cost = expected_additional_cost.quantize(Decimal('0.000001'))
+    
+    # Add token usage to the existing session
+    billing_profile.add_token_usage(
+        model_name, 
+        input_tokens, 
+        input_tokens_cached, 
+        output_tokens,
+        session=session
+    )
+    
+    # Verify the session was updated correctly
+    session.refresh_from_db()
+    assert session.cost == initial_cost + expected_additional_cost
+    assert session.total_tokens == initial_tokens + input_tokens + input_tokens_cached + output_tokens
+
+
+def test_add_token_usage_with_insufficient_credits(user):
+    """Test adding token usage when the user has insufficient credits."""
+    # Get the billing profile created by the signal
+    billing_profile = BillingProfile.objects.get(user=user)
+    
+    # Set up auto-recharge
+    billing_profile.auto_recharge_enabled = True
+    billing_profile.auto_recharge_amount = Decimal('20.00')
+    billing_profile.monthly_recharge_limit = Decimal('100.00')
+    billing_profile.save()
+    
+    # Define token usage that will cost more than the user's balance
+    model_name = 'gpt-4o-mini-realtime-preview'
+    input_tokens = 10000
+    input_tokens_cached = 5000
+    output_tokens = 8000
+    
+    # Calculate expected cost using token costs from database
+    expected_cost = (
+        (BillingSettings.get_token_cost(model_name, 'input') * input_tokens) + 
+        (BillingSettings.get_token_cost(model_name, 'input-cached') * input_tokens_cached) + 
+        (BillingSettings.get_token_cost(model_name, 'output') * output_tokens)
+    ) / Decimal('1000000')
+    expected_cost = expected_cost.quantize(Decimal('0.000001'))
+    
+    # Add token usage - this should trigger auto-recharge
+    billing_profile.add_token_usage(
+        model_name, 
+        input_tokens, 
+        input_tokens_cached, 
+        output_tokens
+    )
+    
+    # Verify auto-recharge occurred
+    billing_profile.refresh_from_db()
+    
+    # Check for auto-recharge transaction
+    auto_recharge_transaction = Transaction.objects.filter(
+        billing_profile=billing_profile,
+        transaction_type='auto_recharge'
+    ).first()
+    
+    assert auto_recharge_transaction is not None
+    assert auto_recharge_transaction.amount == Decimal('20.00')
