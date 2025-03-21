@@ -404,3 +404,88 @@ def test_add_token_usage_with_insufficient_credits(user):
     
     assert auto_recharge_transaction is not None
     assert auto_recharge_transaction.amount == Decimal('20.00')
+
+
+def test_add_credit_intent(user):
+    """Test creating a new credit intent."""
+    profile = BillingProfile.objects.get(user=user)
+    initial_credits = profile.total_credits
+    
+    # Create a pending transaction
+    amount = Decimal('50.00')
+    intent_id = 'pi_123'
+    transaction = profile.add_credit_intent(amount, intent_id)
+    
+    # Verify transaction was created with correct state
+    assert transaction.amount == amount
+    assert transaction.status == 'pending'
+    assert transaction.stripe_payment_intent_id == intent_id
+    
+    # Verify credits weren't added yet
+    profile.refresh_from_db()
+    assert profile.total_credits == initial_credits
+
+
+def test_update_credit_intent_success_flow(user):
+    """Test successful credit intent flow."""
+    profile = BillingProfile.objects.get(user=user)
+    initial_credits = profile.total_credits
+    
+    # Create and process a transaction
+    amount = Decimal('50.00')
+    intent_id = 'pi_123'
+    transaction = profile.add_credit_intent(amount, intent_id)
+    
+    # Update to processing
+    profile.update_credit_intent(intent_id, 'processing')
+    transaction.refresh_from_db()
+    assert transaction.status == 'processing'
+    assert profile.total_credits == initial_credits  # Still no credits added
+    
+    # Update to succeeded
+    profile.update_credit_intent(intent_id, 'succeeded')
+    transaction.refresh_from_db()
+    profile.refresh_from_db()
+    assert transaction.status == 'succeeded'
+    assert profile.total_credits == initial_credits + amount  # Credits added
+
+
+def test_update_credit_intent_failure_flow(user):
+    """Test failed credit intent flow."""
+    profile = BillingProfile.objects.get(user=user)
+    initial_credits = profile.total_credits
+    
+    # Create and process a transaction
+    amount = Decimal('50.00')
+    intent_id = 'pi_123'
+    transaction = profile.add_credit_intent(amount, intent_id)
+    
+    # Update to processing then failed
+    profile.update_credit_intent(intent_id, 'processing')
+    profile.update_credit_intent(intent_id, 'failed')
+    
+    transaction.refresh_from_db()
+    profile.refresh_from_db()
+    assert transaction.status == 'failed'
+    assert profile.total_credits == initial_credits  # No credits added
+
+
+def test_delete_credit_intent(user):
+    """Test deleting a credit intent."""
+    profile = BillingProfile.objects.get(user=user)
+    initial_credits = profile.total_credits
+    
+    # Create a pending transaction
+    amount = Decimal('50.00')
+    intent_id = 'pi_123'
+    transaction = profile.add_credit_intent(amount, intent_id)
+    
+    # Delete the intent
+    profile.delete_credit_intent(intent_id)
+    
+    # Verify transaction was deleted
+    assert not Transaction.objects.filter(stripe_payment_intent_id=intent_id).exists()
+    
+    # Verify credits weren't affected
+    profile.refresh_from_db()
+    assert profile.total_credits == initial_credits
