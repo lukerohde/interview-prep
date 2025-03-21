@@ -5,7 +5,7 @@ from django.db.models import Sum
 from datetime import timedelta
 from decimal import Decimal
 
-from billing.models import BillingProfile, Session, Transaction
+from billing.models import BillingProfile, Session, Transaction, BillingSettings
 
 
 @login_required
@@ -37,11 +37,15 @@ def billing_dashboard(request):
         created_at__gte=current_month_start
     ).aggregate(total=Sum('cost'))['total'] or Decimal('0.00')
     
+    # Get default signup credits amount
+    billing_settings = BillingSettings.load()
+    
     context = {
         'billing_profile': billing_profile,
         'recent_sessions': recent_sessions,
         'recent_transactions': recent_transactions,
         'monthly_usage': monthly_usage,
+        'default_recharge_amount': billing_settings.default_recharge_amount,
     }
     
     return render(request, 'billing/dashboard.html', context)

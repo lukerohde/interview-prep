@@ -331,6 +331,13 @@ class BillingSettings(models.Model):
         help_text="Default credits to grant to new users upon signup. Set to zero to disable signup credits."
     )
     
+    default_recharge_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('10.00'),
+        help_text="Default amount shown in the recharge form. Must be between $5 and $1000, in increments of $5."
+    )
+    
     class Meta:
         verbose_name = "Billing Settings"
         verbose_name_plural = "Billing Settings"

@@ -41,6 +41,7 @@ def recharge_credits(request):
     
     # Get amount from query params or use default
     amount = Decimal(request.GET.get('amount', '5.00'))
+    amount_cents = int(amount * 100)
     
     # Create or get Stripe customer
     if not billing_profile.stripe_customer_id:
@@ -52,7 +53,7 @@ def recharge_credits(request):
     
     # Create payment intent with card-only payments
     intent = stripe.PaymentIntent.create(
-        amount=int(amount * 100),  # Convert to cents
+        amount=int(amount_cents),  # Convert to cents
         currency='usd',
         customer=billing_profile.stripe_customer_id,
         payment_method_types=['card'],  # Only allow card payments

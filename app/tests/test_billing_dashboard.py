@@ -6,7 +6,7 @@ from django.utils import timezone
 from datetime import timedelta
 from .factories import UserFactory
 from .factories_billing import BillingProfileFactory, TransactionFactory
-from billing.models import BillingProfile, Session, Transaction
+from billing.models import BillingProfile, Session, Transaction, BillingSettings
 
 pytestmark = pytest.mark.django_db
 
@@ -172,6 +172,30 @@ def test_session_history_view(authenticated_client, user):
     assert 1000 in session_tokens
     assert 1500 in session_tokens
     assert 2000 in session_tokens
+
+
+def test_dashboard_shows_default_recharge_amount(authenticated_client, user):
+    """Test that the billing dashboard shows the default recharge amount in the recharge form."""
+    # Set a custom default recharge amount
+    billing_settings = BillingSettings.load()
+    billing_settings.default_recharge_amount = Decimal('25.00')
+    billing_settings.save()
+    
+    # Access the billing dashboard
+    response = authenticated_client.get(reverse('billing:billing_dashboard'))
+    
+    # Check that the response is successful
+    assert response.status_code == 200
+    
+    # Check that signup credits amount is in the context
+    assert response.context['default_recharge_amount'] == Decimal('25.00')
+    
+    # Check that the amount appears in the form
+    content = response.content.decode()
+    assert 'value="25.00"' in content
+    assert 'min="5"' in content
+    assert 'max="1000"' in content
+    assert 'step="5"' in content
 
 
 def test_transaction_history_view(authenticated_client, user):

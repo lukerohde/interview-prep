@@ -28,7 +28,7 @@ class TransactionAdmin(admin.ModelAdmin):
 
 @admin.register(BillingSettings)
 class BillingSettingsAdmin(admin.ModelAdmin):
-    list_display = ('signup_credits',)
+    list_display = ('signup_credits', 'default_recharge_amount')
     
     def has_add_permission(self, request):
         # Only allow one instance of BillingSettings

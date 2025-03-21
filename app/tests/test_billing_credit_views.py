@@ -44,25 +44,47 @@ def test_recharge_credits_view(authenticated_client, user, mock_stripe):
     
     assert response.status_code == 200
     assert 'billing/recharge.html' in [t.name for t in response.templates]
+
+def test_recharge_credits_view_with_amount_from_dashboard(authenticated_client, user, mock_stripe):
+    """Test that the amount selected on the dashboard appears correctly on the recharge page."""
+    # First visit dashboard and submit the recharge form
+    dashboard_response = authenticated_client.get(reverse('billing:billing_dashboard'))
+    assert dashboard_response.status_code == 200
     
-    # Check Stripe customer was created
-    mock_stripe.Customer.create.assert_called_once_with(
-        email=user.email
+    # Get the form from dashboard and submit with custom amount
+    recharge_amount = '75.00'
+    recharge_response = authenticated_client.get(
+        reverse('billing:recharge_credits'),
+        {'amount': recharge_amount}
     )
     
-    # Check payment intent was created
+    # Verify response
+    assert recharge_response.status_code == 200
+    assert 'billing/recharge.html' in [t.name for t in recharge_response.templates]
+    
+    # Check context
+    assert recharge_response.context['recharge_amount'] == recharge_amount
+    assert recharge_response.context['client_secret'] == 'secret_123'
+    assert recharge_response.context['stripe_publishable_key']
+
+    # Check amount appears in template
+    content = recharge_response.content.decode()
+    assert f'${recharge_amount}' in content
+    
+    # Verify Stripe setup with correct amount in cents
     mock_stripe.PaymentIntent.create.assert_called_once_with(
-        amount=500,  # $5.00 in cents
+        amount=7500,  # $75.00 in cents
         currency='usd',
         customer='cus_123',
         payment_method_types=['card'],
         automatic_payment_methods=None
     )
     
-    # Check context
-    assert response.context['recharge_amount'] == '5.00'
-    assert response.context['client_secret'] == 'secret_123'
-    assert response.context['stripe_publishable_key']
+    # Check Stripe customer was created
+    mock_stripe.Customer.create.assert_called_once_with(
+        email=user.email
+    )
+
 
 def test_recharge_credits_view_custom_amount(authenticated_client, user, mock_stripe):
     """Test the recharge credits view with custom amount."""
