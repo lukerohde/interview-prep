@@ -97,6 +97,7 @@
                                 <th>Date</th>
                                 <th>Type</th>
                                 <th>Amount</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -105,10 +106,11 @@
                                 <td>{{ transaction.created_at|date:"M d, Y H:i" }}</td>
                                 <td>{{ transaction.get_transaction_type_display }}</td>
                                 <td>${{ transaction.amount|floatformat:2 }}</td>
+                                <td>{{ transaction.status }}</td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="3" class="text-center">No transactions found</td>
+                                <td colspan="4" class="text-center">No transactions found</td>
                             </tr>
                             {% endfor %}
                         </tbody>

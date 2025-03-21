@@ -23,9 +23,11 @@ def billing_dashboard(request):
         created_at__gte=thirty_days_ago
     ).order_by('-created_at')
     
-    # Get recent transactions
+    # Get recent non-pending transactions
     recent_transactions = Transaction.objects.filter(
         billing_profile=billing_profile
+    ).exclude(
+        status='pending'
     ).order_by('-created_at')[:10]
     
     # Calculate monthly usage

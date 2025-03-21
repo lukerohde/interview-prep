@@ -13,6 +13,8 @@ class BillingProfile(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='billing_profile')
+    stripe_customer_id = models.CharField(max_length=100, blank=True, null=True)
+    stripe_payment_method_id = models.CharField(max_length=100, blank=True, null=True)
     auto_recharge_enabled = models.BooleanField(default=False)
     auto_recharge_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     monthly_recharge_limit = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
@@ -31,7 +33,7 @@ class BillingProfile(models.Model):
 
     def add_credits(self, amount, transaction_type='recharge'):
         """
-        Add credits to the user's account and create a transaction record
+        Add credits to the user's account and create a successful transaction record
         """
         if amount < 0:
             raise ValueError("Amount must be positive")
@@ -39,14 +41,101 @@ class BillingProfile(models.Model):
         self.total_credits += amount
         self.save()
         
-        # Create transaction record
+        # Create transaction record with succeeded status
         Transaction.objects.create(
             billing_profile=self,
             amount=amount,
-            transaction_type=transaction_type
+            transaction_type=transaction_type,
+            status='succeeded'
         )
         
         return self.balance
+
+    def add_credit_intent(self, amount, intent_id):
+        """
+        Create a pending transaction for a credit recharge intent
+        
+        Args:
+            amount (Decimal): Amount to add
+            intent_id (str): Stripe payment intent ID
+            
+        Returns:
+            Transaction: The created transaction
+        """
+        if amount < 0:
+            raise ValueError("Amount must be positive")
+        
+        transaction = Transaction.objects.create(
+            billing_profile=self,
+            amount=amount,
+            transaction_type='recharge',
+            status='pending',
+            stripe_payment_intent_id=intent_id,
+            description=f'Credit recharge of ${amount}'
+        )
+        
+        return transaction
+    
+    def update_credit_intent(self, intent_id, status):
+        """
+        Update a credit recharge intent's status and adjust credits accordingly
+        
+        Args:
+            intent_id (str): Stripe payment intent ID
+            status (str): New status ('succeeded', 'failed', 'cancelled')
+            
+        Returns:
+            bool: True if transaction was found and updated
+        """
+        try:
+            transaction = Transaction.objects.get(
+                billing_profile=self,
+                stripe_payment_intent_id=intent_id
+            )
+            
+            if transaction.status != status:
+                old_status = transaction.status
+                transaction.status = status
+                transaction.save()
+                
+                # Handle credit adjustments based on status change
+                if old_status != 'succeeded' and status == 'succeeded':
+                    # Going from not successful to successful - add credits
+                    self.total_credits += transaction.amount
+                    self.save()
+                elif old_status == 'succeeded' and status != 'succeeded':
+                    # Going from successful to not successful - remove credits
+                    self.total_credits -= transaction.amount
+                    self.save()
+                
+            return True
+            
+        except Transaction.DoesNotExist:
+            return False
+            
+    def delete_credit_intent(self, intent_id):
+        """
+        Delete a pending credit recharge intent
+        
+        Args:
+            intent_id (str): Stripe payment intent ID
+            
+        Returns:
+            bool: True if transaction was found and deleted
+        """
+        try:
+            transaction = Transaction.objects.get(
+                billing_profile=self,
+                stripe_payment_intent_id=intent_id,
+                status__in=['pending', 'processing']  # Only delete if not completed
+            )
+            
+            # Delete the transaction
+            transaction.delete()
+            return True
+            
+        except Transaction.DoesNotExist:
+            return False
     
     def use_credits(self, amount, session=None, tokens=0):
         """
@@ -188,10 +277,20 @@ class Transaction(models.Model):
         ('promotion', 'Promotion')
     ]
     
+    PAYMENT_STATUS = [
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('succeeded', 'Succeeded'),
+        ('failed', 'Failed'),
+        ('cancelled', 'Cancelled')
+    ]
+    
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     billing_profile = models.ForeignKey(BillingProfile, on_delete=models.CASCADE, related_name='transactions')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPES)
+    status = models.CharField(max_length=20, choices=PAYMENT_STATUS, default='pending')
+    stripe_payment_intent_id = models.CharField(max_length=100, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

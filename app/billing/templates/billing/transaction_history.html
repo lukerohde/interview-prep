@@ -19,6 +19,7 @@
                         <th>Time</th>
                         <th>Type</th>
                         <th>Amount</th>
+                        <th>Status</th>
                         <th>Description</th>
                     </tr>
                 </thead>
@@ -29,11 +30,22 @@
                         <td>{{ transaction.created_at|date:"H:i:s" }}</td>
                         <td>{{ transaction.get_transaction_type_display }}</td>
                         <td>${{ transaction.amount|floatformat:2 }}</td>
+                        <td>
+                            {% if transaction.status == 'succeeded' %}
+                                <span class="badge bg-success">{{ transaction.get_status_display }}</span>
+                            {% elif transaction.status == 'failed' %}
+                                <span class="badge bg-danger">{{ transaction.get_status_display }}</span>
+                            {% elif transaction.status == 'cancelled' %}
+                                <span class="badge bg-secondary">{{ transaction.get_status_display }}</span>
+                            {% else %}
+                                <span class="badge bg-warning">{{ transaction.get_status_display }}</span>
+                            {% endif %}
+                        </td>
                         <td>{{ transaction.description|default:"-" }}</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="text-center">No transactions found</td>
+                        <td colspan="6" class="text-center">No transactions found</td>
                     </tr>
                     {% endfor %}
                 </tbody>

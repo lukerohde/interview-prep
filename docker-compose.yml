@@ -19,6 +19,9 @@ services:
       - DJANGO_DEBUG
       - OPENAI_API_KEY
       - PWDEBUG
+      - STRIPE_API_KEY
+      - STRIPE_PUBLISHABLE_KEY
+      - STRIPE_WEBHOOK_SECRET
     links:
       - pg
     tty: true

@@ -64,8 +64,30 @@ make help
    make test-headed
    ```
 
+
+
 ## Deployment Instructions
 
 For more detailed instructions, please refer to the following README files:
 
 - [Deploy to Render](deploy-render/README.md)
+
+# Stripe Payment Integration
+
+Sign into stripe and setup your account
+
+Set your Stripe keys in the .env file
+
+STRIPE_PUBLISHABLE_KEY=xxx
+STRIPE_API_KEY=xxx
+STRIPE_WEBHOOK_SECRET=xxx
+
+You get the webhook secret from https://dashboard.stripe.com/test/workbench/webhooks
+
+Setup a webhook with the following events:
+* payment_intent.succeeded
+* payment_intent.payment_failed
+
+On https://your-domain/billing/api/stripe-webhook/
+
+Use `ngrok http 3000` for local development

@@ -11,6 +11,12 @@ urlpatterns = [
     path('sessions/', history_views.SessionHistoryView.as_view(), name='session_history'),
     path('transactions/', history_views.TransactionHistoryView.as_view(), name='transaction_history'),
     
+    # Transaction status updates
+    path('api/update-transaction-status/', credit_views.UpdateTransactionStatusView.as_view(), name='update_transaction_status'),
+    
+    # Stripe webhook endpoint
+    path('api/stripe-webhook/', credit_views.StripeWebhookView.as_view(), name='stripe_webhook'),
+    
     # API endpoint for token usage
     path('api/token-usage/', add_token_usage, name='add_token_usage'),
 ]

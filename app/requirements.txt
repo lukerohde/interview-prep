@@ -19,6 +19,7 @@
 # whitenoise
 # boto3
 # inflect
+# stripe
 
 ## django frozen at 5.1.4 - 2024-12-13
 ## pip freeze > requirements.txt
@@ -95,6 +96,7 @@ sniffio==1.3.1
 soupsieve==2.6
 sqlparse==0.5.3
 stack-data==0.6.3
+stripe==11.6.0
 text-unidecode==1.3
 tqdm==4.67.1
 traitlets==5.14.3

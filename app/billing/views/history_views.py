@@ -38,9 +38,11 @@ class TransactionHistoryView(LoginRequiredMixin, View):
         """Handle GET request - display transaction history"""
         billing_profile = request.user.billing_profile
         
-        # Get all transactions, ordered by most recent first
+        # Get all non-pending transactions, ordered by most recent first
         transactions = Transaction.objects.filter(
             billing_profile=billing_profile
+        ).exclude(
+            status='pending'
         ).order_by('-created_at')
         
         context = {
