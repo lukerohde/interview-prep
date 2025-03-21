@@ -18,28 +18,54 @@
                 <div class="card-body">
                     <p>Current Balance: <strong>${{ billing_profile.balance|floatformat:2 }}</strong></p>
                     
-                    <form id="payment-form" method="post">
-                        {% csrf_token %}
-                        
-                        <div class="form-group mb-4">
-                            <label>Amount to Add</label>
-                            <div class="form-control-static">
-                                <h3>${{ recharge_amount }}</h3>
-                                <input type="hidden" name="amount" value="{{ recharge_amount }}">
+                    <div data-controller="recharge"
+                         data-recharge-publishable-key-value="{{ stripe_publishable_key }}"
+                         data-recharge-client-secret-value="{{ client_secret }}"
+                         data-recharge-update-url-value="{% url 'billing:update_transaction_status' %}"
+                         data-recharge-intent-id-value="{{ intent.id }}"
+                         data-recharge-email-value="{{ request.user.email }}"
+                         data-recharge-return-url-value="{% url 'billing:billing_dashboard' %}"
+                         data-recharge-csrf-token-value="{{ csrf_token }}"
+                         data-recharge-loading-class="is-loading"
+                         data-recharge-error-class="is-invalid">
+                        <form id="payment-form" data-action="submit->recharge#handleSubmit">
+                            {% csrf_token %}
+                            
+                            <div class="form-group mb-4">
+                                <label>Amount to Add</label>
+                                <div class="form-control-static">
+                                    <h3>${{ recharge_amount }}</h3>
+                                    <input type="hidden" name="amount" value="{{ recharge_amount }}">
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="form-group mb-4">
-                            <div id="payment-element" class="form-control"></div>
-                            <div id="payment-message" class="invalid-feedback" role="alert"></div>
-                        </div>
+                            <div class="form-group mb-4">
+                                <div data-recharge-target="payment" class="form-control d-none"></div>
+                                <div data-recharge-target="paymentSpinner" class="text-center py-3">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Loading Stripe's payment form...</span>
+                                    </div>
+                                    <div class="mt-2 text-muted">Loading payment form...</div>
+                                </div>
+                                <div data-recharge-target="error" class="text-danger mt-2" role="alert"></div>
+                            </div>
 
-                        
-                        <div class="mt-3">
-                            <button type="submit" class="btn btn-primary" id="submit-button">Pay ${{ recharge_amount }}</button>
-                            <button type="button" class="btn btn-outline-secondary" id="cancel-button" onclick="handleCancel()">Cancel</button>
-                        </div>
-                    </form>
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-primary" data-recharge-target="submit">
+                                    <span class="d-none spinner-border spinner-border-sm me-1" data-recharge-target="submitSpinner"></span>
+                                    <span data-recharge-target="submitText">Pay ${{ recharge_amount }}</span>
+                                    <span class="d-none" data-recharge-target="submitProcessing">Processing...</span>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" 
+                                        data-recharge-target="cancel"
+                                        data-action="click->recharge#handleCancel">
+                                    <span class="d-none spinner-border spinner-border-sm me-1" data-recharge-target="cancelSpinner"></span>
+                                    <span data-recharge-target="cancelText">Cancel</span>
+                                    <span class="d-none" data-recharge-target="cancelProcessing">Cancelling...</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                     
                     <div class="mt-4">
                         <p class="text-muted small">
@@ -53,109 +79,4 @@
     </div>
 </div>
 
-<script>
-    let elements;
-    let paymentElement;
-    const stripe = Stripe('{{ stripe_publishable_key }}');
-
-    const form = document.getElementById('payment-form');
-    const submitButton = document.getElementById('submit-button');
-    const paymentMessage = document.getElementById('payment-message');
-
-    async function initialize() {
-        const appearance = {
-            theme: 'stripe',
-        };
-
-        elements = stripe.elements({
-            clientSecret: '{{ client_secret }}',
-            appearance,
-            loader: 'auto',
-        });
-
-        paymentElement = elements.create('payment', {
-            layout: { type: 'tabs' },
-            defaultValues: {
-                billingDetails: {
-                    email: '{{ request.user.email }}',
-                }
-            },
-            paymentMethodOrder: ['card'],  // Only allow card payments
-            wallets: { applePay: 'never', googlePay: 'never' }  // Disable digital wallets
-        });
-        
-        await paymentElement.mount('#payment-element');
-    }
-
-    async function updateTransactionStatus(action) {
-        try {
-            const response = await fetch('{% url "billing:update_transaction_status" %}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-                },
-                body: `intent_id={{ intent.id }}&action=${action}`
-            });
-            
-            if (!response.ok) {
-                throw new Error('Failed to update transaction status');
-            }
-            
-            return await response.json();
-        } catch (error) {
-            console.error('Error updating transaction status:', error);
-            throw error;
-        }
-    }
-
-    async function handleSubmit(e) {
-        e.preventDefault();
-        setLoading(true);
-        paymentMessage.textContent = '';
-        paymentMessage.classList.remove('d-block');
-
-        try {
-            // First update status to processing
-            await updateTransactionStatus('process');
-            
-            // Then confirm the payment with Stripe
-            const { error } = await stripe.confirmPayment({
-                elements,
-                confirmParams: {
-                    return_url: window.location.origin + '{% url "billing:billing_dashboard" %}',
-                },
-            });
-
-            if (error) {
-                throw error;
-            }
-        } catch (error) {
-            paymentMessage.textContent = error.message || 'An error occurred';
-            paymentMessage.classList.add('d-block');
-            setLoading(false);
-        }
-    }
-
-    // Show a spinner on payment submission
-    function setLoading(isLoading) {
-        submitButton.disabled = isLoading;
-        submitButton.innerHTML = isLoading ? 
-            '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...' : 
-            'Pay ${{ recharge_amount }}';
-    }
-
-    async function handleCancel() {
-        try {
-            await updateTransactionStatus('cancel');
-            window.location.href = '{% url "billing:billing_dashboard" %}';
-        } catch (error) {
-            paymentMessage.textContent = 'Failed to cancel payment';
-            paymentMessage.classList.add('d-block');
-        }
-    }
-
-    initialize();
-    form.addEventListener('submit', handleSubmit);
-</script>
 {% endblock %}

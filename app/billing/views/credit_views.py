@@ -109,7 +109,6 @@ def update_transaction_status(request):
 @csrf_exempt
 @require_POST
 def stripe_webhook(request):
-    import ipdb; ipdb.set_trace()
     """Handle Stripe webhook events"""
     payload = request.body
     sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')

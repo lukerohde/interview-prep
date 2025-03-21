@@ -4,6 +4,7 @@ import VoiceChatController from '../../main/js/controllers/voice_chat_controller
 import TranscriptController from '../../main/js/controllers/transcript_controller'
 import PromptOverrideController from '../../main/js/controllers/prompt_override_controller'
 import DocumentController from '../../main/js/controllers/document_controller'
+import RechargeController from '../../billing/js/controllers/recharge_controller'
 
 console.log('Loading Stimulus application...')
 let application = null
@@ -38,6 +39,8 @@ application.register('voice-chat', VoiceChatController)
 application.register('transcript', TranscriptController)
 application.register('prompt-override', PromptOverrideController)
 application.register('document', DocumentController)
+application.register('recharge', RechargeController)
+console.log('after recharge')
 console.log('Controllers registered successfully')
 
 
