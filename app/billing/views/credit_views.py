@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_http_methods
 
-from billing.models import Transaction
+from billing.models import Transaction, BillingProfile
 
 # Configure Stripe
 stripe.api_key = settings.STRIPE_API_KEY
@@ -17,7 +17,8 @@ stripe.api_key = settings.STRIPE_API_KEY
 WEBHOOK_STATUS_MAPPING = {
     'payment_intent.succeeded': 'succeeded',
     'payment_intent.payment_failed': 'failed',
-    'payment_intent.canceled': 'cancelled'
+    'payment_intent.canceled': 'cancelled',
+    'setup_intent.succeeded': 'setup_succeeded'
 }
 
 
@@ -123,7 +124,28 @@ def stripe_webhook(request):
     except stripe.error.SignatureVerificationError:
         return JsonResponse({'error': 'Invalid signature'}, status=400)
 
-    # Only process payment intent events we care about
+    # Handle setup_intent events
+    if event.type == 'setup_intent.succeeded':
+        setup_intent = event.data.object
+        try:
+            # Find billing profile by customer ID
+            billing_profile = BillingProfile.objects.get(
+                stripe_customer_id=setup_intent.customer
+            )
+            # Save the payment method ID
+            billing_profile.stripe_payment_method_id = setup_intent.payment_method
+            billing_profile.save()
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Payment method saved successfully'
+            })
+        except BillingProfile.DoesNotExist:
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Billing profile not found'
+            })
+
+    # Handle payment intent events
     new_status = WEBHOOK_STATUS_MAPPING.get(event.type)
     if not new_status:
         # Return 200 for events we don't handle
@@ -147,4 +169,10 @@ def stripe_webhook(request):
         
     # For other statuses, update the transaction
     transaction.billing_profile.update_credit_intent(intent.id, new_status)
+    
+    # If this was an auto-recharge failure, notify the user
+    if new_status == 'failed' and transaction.transaction_type == 'auto_recharge':
+        # TODO: Send email notification about failed auto-recharge
+        pass
+        
     return JsonResponse({'status': 'success', 'message': f'Updated transaction to {new_status}'})

@@ -1,43 +1,46 @@
-from django.shortcuts import render, redirect
-from django.views import View
-from django.contrib.auth.mixins import LoginRequiredMixin
+import stripe
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.conf import settings
+from django.http import JsonResponse
 
 from billing.models import BillingProfile
 from billing.forms import BillingSettingsForm
 
+# Configure Stripe
+stripe.api_key = settings.STRIPE_API_KEY
 
-class BillingSettingsView(LoginRequiredMixin, View):
-    """
-    Handle billing settings updates
-    """
-    template_name = 'billing/settings.html'
+
+@login_required
+def billing_settings(request):
+    """Handle billing settings display and updates"""
+    billing_profile = request.user.billing_profile
+    form = BillingSettingsForm(instance=billing_profile)
+        
+    # Create SetupIntent if user doesn't have a payment method
+    setup_intent = None
+    if not billing_profile.has_payment_method:
+        # Create or get Stripe customer
+        if not billing_profile.stripe_customer_id:
+            customer = stripe.Customer.create(
+                email=request.user.email
+            )
+            billing_profile.stripe_customer_id = customer.id
+            billing_profile.save()
+            
+        # Create SetupIntent for saving card
+        setup_intent = stripe.SetupIntent.create(
+            customer=billing_profile.stripe_customer_id,
+            payment_method_types=['card'],
+            usage='off_session'  # Required for future payments
+        )
     
-    def get(self, request):
-        """Handle GET request - display the settings form"""
-        billing_profile = request.user.billing_profile
-        form = BillingSettingsForm(instance=billing_profile)
-        
-        context = {
-            'form': form,
-            'billing_profile': billing_profile,
-        }
-        
-        return render(request, self.template_name, context)
+    context = {
+        'form': form,
+        'billing_profile': billing_profile,
+        'stripe_publishable_key': settings.STRIPE_PUBLISHABLE_KEY,
+        'setup_intent': setup_intent
+    }
     
-    def post(self, request):
-        """Handle POST request - process the settings form"""
-        billing_profile = request.user.billing_profile
-        form = BillingSettingsForm(request.POST, instance=billing_profile)
-        
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Billing settings updated successfully.')
-            return redirect('billing:billing_dashboard')
-        
-        context = {
-            'form': form,
-            'billing_profile': billing_profile,
-        }
-        
-        return render(request, self.template_name, context)
+    return render(request, 'billing/settings.html', context)

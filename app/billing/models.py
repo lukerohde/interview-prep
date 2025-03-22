@@ -51,7 +51,7 @@ class BillingProfile(models.Model):
         
         return self.balance
 
-    def add_credit_intent(self, amount, intent_id):
+    def add_credit_intent(self, amount, intent_id, type='recharge', description=None):
         """
         Create a pending transaction for a credit recharge intent
         
@@ -65,13 +65,15 @@ class BillingProfile(models.Model):
         if amount < 0:
             raise ValueError("Amount must be positive")
         
+        description = description or f'Credit recharge of ${amount}'
+        
         transaction = Transaction.objects.create(
             billing_profile=self,
             amount=amount,
-            transaction_type='recharge',
+            transaction_type=type,
             status='pending',
             stripe_payment_intent_id=intent_id,
-            description=f'Credit recharge of ${amount}'
+            description=description
         )
         
         return transaction
@@ -164,8 +166,41 @@ class BillingProfile(models.Model):
                 ).aggregate(total=models.Sum('amount'))['total'] or Decimal('0.00')
                 
                 if month_recharges + self.auto_recharge_amount <= self.monthly_recharge_limit:
-                    # Auto-recharge
-                    self.add_credits(self.auto_recharge_amount, 'auto_recharge')
+                    # Create PaymentIntent for auto-recharge
+                    if not self.stripe_payment_method_id:
+                        raise ValueError("No payment method configured for auto-recharge")
+                        
+                    import stripe
+                    stripe.api_key = settings.STRIPE_API_KEY
+                    
+                    # Create payment intent with the saved payment method
+                    try:
+                        intent = stripe.PaymentIntent.create(
+                            amount=int(self.auto_recharge_amount * 100),  # Convert to cents
+                            currency='usd',
+                            customer=self.stripe_customer_id,
+                            payment_method=self.stripe_payment_method_id,
+                            payment_method_types=['card'],
+                            confirm=True,  # Confirm immediately since we have the payment method
+                            off_session=True,  # This is an automatic payment
+                            description=f'Auto-recharge for {self.user.email}'
+                        )
+                        
+                        # Create transaction record with auto_recharge type and update to processing
+                        transaction = self.add_credit_intent(self.auto_recharge_amount, intent.id, type='auto_recharge', description=f'Auto-recharge for {self.user.email}')
+                        self.update_credit_intent(intent.id, 'processing')
+                        
+                        # Note: Credits will be added by the webhook when payment succeeds
+                    except stripe.error.StripeError as e:
+                        # Create a failed transaction to track the error
+                        Transaction.objects.create(
+                            billing_profile=self,
+                            amount=self.auto_recharge_amount,
+                            transaction_type='auto_recharge',
+                            status='failed',
+                            description=f'Auto-recharge failed: {str(e)}'
+                        )
+                        raise ValueError(f"Auto-recharge failed: {str(e)}")
                 else:
                     raise ValueError("Monthly recharge limit reached")
             else:

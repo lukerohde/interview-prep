@@ -7,9 +7,9 @@ app_name = 'billing'
 urlpatterns = [
     path('', dashboard_views.billing_dashboard, name='billing_dashboard'),
     path('recharge/', credit_views.recharge_credits, name='recharge_credits'),
-    path('settings/', settings_views.BillingSettingsView.as_view(), name='billing_settings'),
-    path('sessions/', history_views.SessionHistoryView.as_view(), name='session_history'),
-    path('transactions/', history_views.TransactionHistoryView.as_view(), name='transaction_history'),
+    path('settings/', settings_views.billing_settings, name='billing_settings'),
+    path('sessions/', history_views.session_history, name='session_history'),
+    path('transactions/', history_views.transaction_history, name='transaction_history'),
     
     # Stripe webhook endpoint
     path('api/stripe-webhook/', credit_views.stripe_webhook, name='stripe_webhook'),

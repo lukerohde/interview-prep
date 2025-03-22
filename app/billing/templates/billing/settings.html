@@ -3,6 +3,10 @@
 
 {% block title %}Billing Settings{% endblock %}
 
+{% block extra_head %}
+<script src="https://js.stripe.com/v3/"></script>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
     <div class="row">
@@ -12,7 +16,7 @@
                     <h5 class="card-title mb-0">Billing Settings</h5>
                 </div>
                 <div class="card-body">
-                    <form method="post">
+                    <form method="post" id="settings-form">
                         {% csrf_token %}
                         
                         <div class="form-group mb-3">
@@ -58,9 +62,49 @@
                             <a href="{% url 'billing:billing_dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
                         </div>
                     </form>
+
+                    {% if not billing_profile.has_payment_method %}
+                        <div class="mt-4" 
+                             data-controller="setup-payment"
+                             data-setup-payment-publishable-key-value="{{ stripe_publishable_key }}"
+                             data-setup-payment-client-secret-value="{{ setup_intent.client_secret }}"
+                             data-setup-payment-email-value="{{ user.email }}"
+                             data-setup-payment-csrf-token-value="{{ csrf_token }}">
+                            
+                            <h5>Add Payment Method</h5>
+                            <div class="alert alert-info">
+                                To enable auto-recharge, please add a payment method.
+                            </div>
+                            
+                            <div class="payment-form">
+                                <div data-setup-payment-target="error" class="alert alert-danger d-none"></div>
+                                
+                                <div class="d-flex justify-content-center mb-3">
+                                    <div data-setup-payment-target="paymentSpinner" class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </div>
+                                
+                                <div data-setup-payment-target="payment" class="mb-3 d-none"></div>
+                                
+                                <button data-setup-payment-target="submit"
+                                        data-action="setup-payment#handleSubmit"
+                                        class="btn btn-primary w-100 d-flex justify-content-center align-items-center">
+                                    <span data-setup-payment-target="submitSpinner" class="spinner-border spinner-border-sm me-2 d-none" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </span>
+                                    <span data-setup-payment-target="submitText">Save Card</span>
+                                </button>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="module" src="{% static 'billing/js/controllers/setup_payment_controller.js' %}"></script>
 {% endblock %}

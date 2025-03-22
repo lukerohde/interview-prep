@@ -2,7 +2,9 @@ import pytest
 from decimal import Decimal
 from django.test import Client, override_settings
 from django.contrib.auth.models import User
+from unittest.mock import patch, MagicMock
 from .factories import UserFactory
+import stripe
 from billing.models import BillingProfile, Transaction, Session, BillingSettings
 
 pytestmark = pytest.mark.django_db
@@ -360,15 +362,22 @@ def test_add_token_usage_with_existing_session(user):
     assert session.total_tokens == initial_tokens + input_tokens + input_tokens_cached + output_tokens
 
 
-def test_add_token_usage_with_insufficient_credits(user):
-    """Test adding token usage when the user has insufficient credits."""
-    # Get the billing profile created by the signal
+@pytest.fixture
+def mock_stripe():
+    with patch('stripe.PaymentIntent.create') as mock_create:
+        # Setup mock payment intent
+        mock_intent = MagicMock()
+        mock_intent.id = 'pi_123'
+        mock_intent.client_secret = 'secret_123'
+        mock_create.return_value = mock_intent
+        yield mock_create
+
+def test_add_token_usage_with_insufficient_credits_no_auto_recharge(user):
+    """Test adding token usage when user has insufficient credits and no auto-recharge."""
     billing_profile = BillingProfile.objects.get(user=user)
     
-    # Set up auto-recharge
-    billing_profile.auto_recharge_enabled = True
-    billing_profile.auto_recharge_amount = Decimal('20.00')
-    billing_profile.monthly_recharge_limit = Decimal('100.00')
+    # Ensure auto-recharge is disabled
+    billing_profile.auto_recharge_enabled = False
     billing_profile.save()
     
     # Define token usage that will cost more than the user's balance
@@ -377,15 +386,123 @@ def test_add_token_usage_with_insufficient_credits(user):
     input_tokens_cached = 5000
     output_tokens = 8000
     
-    # Calculate expected cost using token costs from database
-    expected_cost = (
-        (BillingSettings.get_token_cost(model_name, 'input') * input_tokens) + 
-        (BillingSettings.get_token_cost(model_name, 'input-cached') * input_tokens_cached) + 
-        (BillingSettings.get_token_cost(model_name, 'output') * output_tokens)
-    ) / Decimal('1000000')
-    expected_cost = expected_cost.quantize(Decimal('0.000001'))
+    # Initial balance should be 0
+    assert billing_profile.balance == Decimal('0.00')
     
-    # Add token usage - this should trigger auto-recharge
+    # Attempt to add token usage
+    with pytest.raises(ValueError) as exc_info:
+        billing_profile.add_token_usage(
+            model_name, 
+            input_tokens, 
+            input_tokens_cached, 
+            output_tokens
+        )
+    
+    assert str(exc_info.value) == "Insufficient credits"
+    assert billing_profile.balance == Decimal('0.00')
+
+
+def test_add_token_usage_monthly_limit_reached(user):
+    """Test auto-recharge when monthly limit is reached."""
+    billing_profile = BillingProfile.objects.get(user=user)
+    
+    # Set up auto-recharge with a low monthly limit
+    billing_profile.auto_recharge_enabled = True
+    billing_profile.auto_recharge_amount = Decimal('20.00')
+    billing_profile.monthly_recharge_limit = Decimal('10.00')  # Set limit lower than recharge amount
+    billing_profile.stripe_customer_id = 'cus_test_123'
+    billing_profile.stripe_payment_method_id = 'pm_test_card_123'
+    billing_profile.save()
+    
+    # Define token usage that will cost more than the user's balance
+    model_name = 'gpt-4o-mini-realtime-preview'
+    input_tokens = 10000
+    input_tokens_cached = 5000
+    output_tokens = 8000
+    
+    # Attempt to add token usage
+    with pytest.raises(ValueError) as exc_info:
+        billing_profile.add_token_usage(
+            model_name, 
+            input_tokens, 
+            input_tokens_cached, 
+            output_tokens
+        )
+    
+    assert str(exc_info.value) == "Monthly recharge limit reached"
+    assert billing_profile.balance == Decimal('0.00')
+
+
+def test_add_token_usage_auto_recharge_stripe_error(user, mock_stripe):
+    """Test auto-recharge when Stripe payment fails."""
+    billing_profile = BillingProfile.objects.get(user=user)
+    
+    # Set up auto-recharge
+    billing_profile.auto_recharge_enabled = True
+    billing_profile.auto_recharge_amount = Decimal('20.00')
+    billing_profile.monthly_recharge_limit = Decimal('100.00')
+    billing_profile.stripe_customer_id = 'cus_test_123'
+    billing_profile.stripe_payment_method_id = 'pm_test_card_123'
+    billing_profile.save()
+    
+    # Mock Stripe error
+    mock_stripe.side_effect = stripe.error.StripeError("Card declined")
+    
+    # Define token usage that will cost more than the user's balance
+    model_name = 'gpt-4o-mini-realtime-preview'
+    input_tokens = 10000
+    input_tokens_cached = 5000
+    output_tokens = 8000
+    
+    # Attempt to add token usage
+    with pytest.raises(ValueError) as exc_info:
+        billing_profile.add_token_usage(
+            model_name, 
+            input_tokens, 
+            input_tokens_cached, 
+            output_tokens
+        )
+    
+    assert str(exc_info.value) == "Auto-recharge failed: Card declined"
+    
+    # Verify failed transaction was created and kept
+    transaction = Transaction.objects.get(
+        billing_profile=billing_profile,
+        transaction_type='auto_recharge',
+        status='failed'
+    )
+    assert transaction.amount == Decimal('20.00')
+    assert transaction.description == 'Auto-recharge failed: Card declined'
+    
+    # Verify balance hasn't changed
+    assert billing_profile.balance == Decimal('0.00')
+
+
+def test_add_token_usage_auto_recharge_success(user, mock_stripe):
+    """Test successful auto-recharge flow."""
+    billing_profile = BillingProfile.objects.get(user=user)
+    
+    # Set up auto-recharge
+    billing_profile.auto_recharge_enabled = True
+    billing_profile.auto_recharge_amount = Decimal('20.00')
+    billing_profile.monthly_recharge_limit = Decimal('100.00')
+    billing_profile.stripe_customer_id = 'cus_test_123'
+    billing_profile.stripe_payment_method_id = 'pm_test_card_123'
+    billing_profile.save()
+    
+    # Mock successful PaymentIntent
+    mock_intent = MagicMock()
+    mock_intent.id = 'pi_123'
+    mock_intent.client_secret = 'secret_123'
+    mock_stripe.return_value = mock_intent
+    
+    # Define token usage that will cost more than the user's balance
+    model_name = 'gpt-4o-mini-realtime-preview'
+    input_tokens = 10000
+    input_tokens_cached = 5000
+    output_tokens = 8000
+    
+    # Attempt to add token usage - this should trigger auto-recharge
     billing_profile.add_token_usage(
         model_name, 
         input_tokens, 
@@ -393,17 +510,37 @@ def test_add_token_usage_with_insufficient_credits(user):
         output_tokens
     )
     
-    # Verify auto-recharge occurred
-    billing_profile.refresh_from_db()
+    # Verify auto-recharge transaction was created and is processing
+    transaction = Transaction.objects.get(
+        billing_profile=billing_profile,
+        transaction_type='auto_recharge',
+        status='processing'
+    )
+    assert transaction.amount == Decimal('20.00')
     
-    # Check for auto-recharge transaction
-    auto_recharge_transaction = Transaction.objects.filter(
+    # Balance can go negative until webhook confirms payment
+    assert billing_profile.balance < Decimal('0.00')
+    
+    # Verify PaymentIntent was created with correct parameters
+    mock_stripe.assert_called_once_with(
+        amount=2000,  # $20.00 in cents
+        currency='usd',
+        customer=billing_profile.stripe_customer_id,
+        payment_method=billing_profile.stripe_payment_method_id,
+        payment_method_types=['card'],
+        confirm=True,
+        off_session=True,
+        description=f'Auto-recharge for {billing_profile.user.email}'
+    )
+    
+    # Verify transaction was created with processing status
+    transaction = Transaction.objects.get(
         billing_profile=billing_profile,
         transaction_type='auto_recharge'
-    ).first()
-    
-    assert auto_recharge_transaction is not None
-    assert auto_recharge_transaction.amount == Decimal('20.00')
+    )
+    assert transaction.amount == Decimal('20.00')
+    assert transaction.status == 'processing'  # Should be processing, not pending
+    assert transaction.stripe_payment_intent_id == 'pi_123'
 
 
 def test_add_credit_intent(user):
