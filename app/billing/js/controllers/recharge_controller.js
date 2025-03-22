@@ -14,16 +14,15 @@ export default class extends Controller {
     }
 
     connect() {
+        console.log('Connecting Recharge Controller')
         this.stripe = Stripe(this.publishableKeyValue)
         this.elements = null
         this.paymentElement = null
-        this.initialize()
-        console.log('after connect')
+        this.initialize_stripe()
     }
 
-    async initialize() {
-        console.log('in initialize')
-    
+    async initialize_stripe() {
+        console.log('Initializing Recharge Controller')
         const appearance = {
             theme: 'stripe',
         }

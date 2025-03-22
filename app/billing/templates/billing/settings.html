@@ -3,7 +3,7 @@
 
 {% block title %}Billing Settings{% endblock %}
 
-{% block extra_head %}
+{% block extra_js %}
 <script src="https://js.stripe.com/v3/"></script>
 {% endblock %}
 
@@ -103,8 +103,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script type="module" src="{% static 'billing/js/controllers/setup_payment_controller.js' %}"></script>
 {% endblock %}

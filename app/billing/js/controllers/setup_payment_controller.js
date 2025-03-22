@@ -11,13 +11,15 @@ export default class extends Controller {
     }
 
     connect() {
+        console.log('Connecting Payment Controller')
         this.stripe = Stripe(this.publishableKeyValue)
         this.elements = null
         this.paymentElement = null
-        this.initialize()
+        this.initialize_stripe()
     }
 
-    async initialize() {
+    async initialize_stripe() {
+        console.log('Initializing Setup Payment Controller')
         const appearance = {
             theme: 'stripe',
         }
