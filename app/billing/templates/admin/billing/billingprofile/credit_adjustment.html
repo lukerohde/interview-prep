@@ -1,0 +1,26 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls %}
+
+{% block content %}
+<div id="content-main">
+    <form method="post">{% csrf_token %}
+        <fieldset class="module aligned">
+            <div class="form-row">
+                <label for="amount">Amount:</label>
+                <input type="number" name="amount" id="amount" step="0.01" required>
+                <div class="help">Enter a positive number to add credits, negative to remove credits</div>
+            </div>
+            <div class="form-row">
+                <label for="description">Description:</label>
+                <input type="text" name="description" id="description" required>
+                <div class="help">Enter a reason for this adjustment</div>
+            </div>
+        </fieldset>
+        
+        <div class="submit-row">
+            <input type="submit" value="Make Adjustment" class="default">
+            <a href="../" class="button cancel-link">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

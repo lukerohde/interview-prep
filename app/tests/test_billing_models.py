@@ -433,6 +433,36 @@ def test_add_token_usage_monthly_limit_reached(user):
     assert billing_profile.balance == Decimal('0.00')
 
 
+def test_auto_recharge_disabled_on_payment_failure(user):
+    """Test that auto-recharge is disabled when a payment fails."""
+    # Get the billing profile created by the signal
+    billing_profile = BillingProfile.objects.get(user=user)
+    
+    # Configure auto-recharge
+    billing_profile.auto_recharge_enabled = True
+    billing_profile.auto_recharge_amount = Decimal('50.00')
+    billing_profile.monthly_recharge_limit = Decimal('200.00')
+    billing_profile.stripe_customer_id = 'cus_123'
+    billing_profile.stripe_payment_method_id = 'pm_123'
+    billing_profile.save()
+    
+    # Create an auto-recharge transaction
+    transaction = Transaction.objects.create(
+        billing_profile=billing_profile,
+        amount=Decimal('50.00'),
+        transaction_type='auto_recharge',
+        status='processing',
+        stripe_payment_intent_id='pi_123'
+    )
+    
+    # Update transaction to failed status
+    billing_profile.update_credit_intent('pi_123', 'failed')
+    
+    # Verify auto-recharge was disabled
+    billing_profile.refresh_from_db()
+    assert not billing_profile.auto_recharge_enabled
+
+
 def test_add_token_usage_auto_recharge_stripe_error(user, mock_stripe):
     """Test auto-recharge when Stripe payment fails."""
     billing_profile = BillingProfile.objects.get(user=user)
@@ -494,6 +524,91 @@ def test_billing_profile_has_payment_method(user):
     billing_profile.stripe_payment_method_id = None
     billing_profile.save()
     assert not billing_profile.has_payment_method
+
+
+def test_adjust_credits(user):
+    """Test credit adjustment with positive and negative amounts."""
+    billing_profile = BillingProfile.objects.get(user=user)
+    initial_credits = billing_profile.total_credits
+    
+    # Test positive adjustment
+    balance = billing_profile.adjust_credits(Decimal('10.00'), 'Test addition')
+    billing_profile.refresh_from_db()
+    assert billing_profile.total_credits == initial_credits + Decimal('10.00')
+    assert balance == billing_profile.balance
+    
+    # Verify transaction was created
+    transaction = Transaction.objects.filter(
+        billing_profile=billing_profile,
+        transaction_type='adjustment',
+        amount=Decimal('10.00')
+    ).first()
+    assert transaction is not None
+    assert transaction.status == 'succeeded'
+    assert transaction.description == 'Test addition'
+    
+    # Test negative adjustment
+    balance = billing_profile.adjust_credits(Decimal('-5.00'), 'Test reduction')
+    billing_profile.refresh_from_db()
+    assert billing_profile.total_credits == initial_credits + Decimal('5.00')
+    assert balance == billing_profile.balance
+    
+    # Verify transaction was created
+    transaction = Transaction.objects.filter(
+        billing_profile=billing_profile,
+        transaction_type='adjustment',
+        amount=Decimal('-5.00')
+    ).first()
+    assert transaction is not None
+    assert transaction.status == 'succeeded'
+    assert transaction.description == 'Test reduction'
+    
+    # Test missing description
+    with pytest.raises(ValueError, match='Description is required for adjustments'):
+        billing_profile.adjust_credits(Decimal('10.00'), '')
+
+
+def test_use_credits_with_existing_auto_recharge(user):
+    """Test that use_credits proceeds when auto-recharge is already in progress."""
+    # Get the billing profile created by the signal
+    billing_profile = BillingProfile.objects.get(user=user)
+    
+    # Configure auto-recharge
+    billing_profile.auto_recharge_enabled = True
+    billing_profile.auto_recharge_amount = Decimal('50.00')
+    billing_profile.monthly_recharge_limit = Decimal('200.00')
+    billing_profile.stripe_customer_id = 'cus_123'
+    billing_profile.stripe_payment_method_id = 'pm_123'
+    billing_profile.save()
+    
+    # Add some initial credits
+    initial_credits = Decimal('5.00')
+    billing_profile.add_credits(initial_credits)
+    
+    # Create a processing auto-recharge transaction
+    Transaction.objects.create(
+        billing_profile=billing_profile,
+        amount=Decimal('50.00'),
+        transaction_type='auto_recharge',
+        status='processing',
+        stripe_payment_intent_id='pi_123'
+    )
+    
+    # Use credits when balance is insufficient but auto-recharge is in progress
+    usage_amount = Decimal('10.00')
+    billing_profile.use_credits(usage_amount)
+    
+    # Verify the usage was recorded
+    billing_profile.refresh_from_db()
+    assert billing_profile.total_usage == usage_amount
+    
+    # Verify no new auto-recharge was triggered
+    recharge_count = Transaction.objects.filter(
+        billing_profile=billing_profile,
+        transaction_type='auto_recharge',
+        status='processing'
+    ).count()
+    assert recharge_count == 1
 
 
 def test_add_token_usage_auto_recharge_success(user, mock_stripe):

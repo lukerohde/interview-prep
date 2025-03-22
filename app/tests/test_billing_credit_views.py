@@ -62,7 +62,7 @@ def test_recharge_credits_view_with_amount_from_dashboard(authenticated_client, 
     assert recharge_response.status_code == 200
     assert 'billing/recharge.html' in [t.name for t in recharge_response.templates]
     
-    # Check context
+    # Check amount appears in context
     assert recharge_response.context['recharge_amount'] == recharge_amount
     assert recharge_response.context['client_secret'] == 'secret_123'
     assert recharge_response.context['stripe_publishable_key']
@@ -245,7 +245,7 @@ def test_stripe_webhook_invalid_payload(client):
         data = response.json()
         assert data['error'] == 'Invalid payload'
 
-def test_stripe_webhook_unhandled_event(client, mock_stripe_webhook):
+def test_stripe_webhook_unhandled_event(client, user, mock_stripe_webhook):
     """Test Stripe webhook with unhandled event type."""
     mock_webhook, mock_event = mock_stripe_webhook
     mock_event.type = 'unhandled.event'

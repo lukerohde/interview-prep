@@ -124,16 +124,33 @@ def stripe_webhook(request):
     except stripe.error.SignatureVerificationError:
         return JsonResponse({'error': 'Invalid signature'}, status=400)
 
+    # Handle payment intent events
+    new_status = WEBHOOK_STATUS_MAPPING.get(event.type)
+    if not new_status:
+        # Return 200 for events we don't handle
+        return JsonResponse({'status': 'success', 'message': 'Event type not handled'})
+    
+    intent = event.data.object
+    transaction = get_transaction(intent.id)
+
+    if not transaction:
+        # Return 200 even if transaction not found - it might be a test webhook or duplicate
+        return JsonResponse({
+            'status': 'success',
+            'message': f'Transaction not found for intent {intent.id}'
+        })
+
+    billing_profile = transaction.billing_profile
+    
+    # billing_profile = BillingProfile.objects.get(
+    #     stripe_customer_id=intent.customer
+    # )
+    
     # Handle setup_intent events
     if event.type == 'setup_intent.succeeded':
-        setup_intent = event.data.object
         try:
-            # Find billing profile by customer ID
-            billing_profile = BillingProfile.objects.get(
-                stripe_customer_id=setup_intent.customer
-            )
             # Save the payment method ID
-            billing_profile.stripe_payment_method_id = setup_intent.payment_method
+            billing_profile.stripe_payment_method_id = intent.payment_method
             billing_profile.save()
             return JsonResponse({
                 'status': 'success',
@@ -144,35 +161,13 @@ def stripe_webhook(request):
                 'status': 'success',
                 'message': 'Billing profile not found'
             })
-
-    # Handle payment intent events
-    new_status = WEBHOOK_STATUS_MAPPING.get(event.type)
-    if not new_status:
-        # Return 200 for events we don't handle
-        return JsonResponse({'status': 'success', 'message': 'Event type not handled'})
-        
-    # Get intent
-    intent = event.data.object
-    transaction = get_transaction(intent.id)
-    
-    if not transaction:
-        # Return 200 even if transaction not found - it might be a test webhook or duplicate
-        return JsonResponse({
-            'status': 'success',
-            'message': f'Transaction not found for intent {intent.id}'
-        })
         
     # For cancellations, delete the transaction
-    if new_status == 'cancelled':
+    if event.type == 'payment_intent.canceled':
         transaction.billing_profile.delete_credit_intent(intent.id)
         return JsonResponse({'status': 'success', 'message': 'Transaction deleted'})
         
     # For other statuses, update the transaction
     transaction.billing_profile.update_credit_intent(intent.id, new_status)
-    
-    # If this was an auto-recharge failure, notify the user
-    if new_status == 'failed' and transaction.transaction_type == 'auto_recharge':
-        # TODO: Send email notification about failed auto-recharge
-        pass
         
     return JsonResponse({'status': 'success', 'message': f'Updated transaction to {new_status}'})

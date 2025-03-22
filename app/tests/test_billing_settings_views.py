@@ -80,7 +80,7 @@ def test_billing_settings_existing_payment_method(mock_setup_intent, authenticat
     assert 'form' in response.context
     assert 'billing_profile' in response.context
     assert 'stripe_publishable_key' in response.context
-    assert response.context['setup_intent'] is None
+    assert not response.context['setup_intent'] is None # we setup a new intent even if we have an existing intent
     
-    # Verify no SetupIntent was created
-    mock_setup_intent.assert_not_called()
+    # Verify new SetupIntent was created
+    mock_setup_intent.assert_called_once()
