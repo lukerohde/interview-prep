@@ -6,10 +6,10 @@ export default class extends Controller {
     static values = {
         publishableKey: String,
         clientSecret: String,
-        updateUrl: String,
         intentId: String,
         email: String,
-        returnUrl: { type: String, default: '/billing/' },
+        updateUrl: String,
+        returnUrl: String,
         csrfToken: String
     }
 

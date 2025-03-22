@@ -7,7 +7,8 @@ app_name = 'billing'
 urlpatterns = [
     path('', dashboard_views.billing_dashboard, name='billing_dashboard'),
     path('recharge/', credit_views.recharge_credits, name='recharge_credits'),
-    path('settings/', settings_views.billing_settings, name='billing_settings'),
+    path('settings/', settings_views.billing_settings_get, name='billing_settings'),
+    path('settings/update/', settings_views.billing_settings_post, name='billing_settings_update'),
     path('sessions/', history_views.session_history, name='session_history'),
     path('transactions/', history_views.transaction_history, name='transaction_history'),
     

@@ -4,6 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.conf import settings
 from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
 from billing.models import BillingProfile
 from billing.forms import BillingSettingsForm
@@ -13,28 +14,40 @@ stripe.api_key = settings.STRIPE_API_KEY
 
 
 @login_required
-def billing_settings(request):
-    """Handle billing settings display and updates"""
+def billing_settings_get(request):
+    """Display billing settings form"""
+    from billing.models import BillingSettings
+    
     billing_profile = request.user.billing_profile
-    form = BillingSettingsForm(instance=billing_profile)
-        
+    
+    # If this is a new form (no values set), use defaults from BillingSettings
+    if not billing_profile.auto_recharge_amount and not billing_profile.monthly_recharge_limit:
+        billing_settings = BillingSettings.load()
+        initial = {
+            'auto_recharge_amount': billing_settings.default_recharge_amount,
+            'monthly_recharge_limit': billing_settings.default_monthly_recharge_limit
+        }
+        form = BillingSettingsForm(instance=billing_profile, initial=initial)
+    else:
+        form = BillingSettingsForm(instance=billing_profile)
+    
     # Create SetupIntent if user doesn't have a payment method
     setup_intent = None
-    if not billing_profile.has_payment_method:
-        # Create or get Stripe customer
-        if not billing_profile.stripe_customer_id:
-            customer = stripe.Customer.create(
-                email=request.user.email
-            )
-            billing_profile.stripe_customer_id = customer.id
-            billing_profile.save()
-            
-        # Create SetupIntent for saving card
-        setup_intent = stripe.SetupIntent.create(
-            customer=billing_profile.stripe_customer_id,
-            payment_method_types=['card'],
-            usage='off_session'  # Required for future payments
+    #if not billing_profile.has_payment_method:
+    # Create or get Stripe customer
+    if not billing_profile.stripe_customer_id:
+        customer = stripe.Customer.create(
+            email=request.user.email
         )
+        billing_profile.stripe_customer_id = customer.id
+        billing_profile.save()
+    
+    # Create SetupIntent for saving card
+    setup_intent = stripe.SetupIntent.create(
+        customer=billing_profile.stripe_customer_id,
+        payment_method_types=['card'],
+        usage='off_session'  # Required for future payments
+    )
     
     context = {
         'form': form,
@@ -44,3 +57,24 @@ def billing_settings(request):
     }
     
     return render(request, 'billing/settings.html', context)
+
+
+@login_required
+@require_POST
+def billing_settings_post(request):
+    """Handle billing settings form submission"""
+    billing_profile = request.user.billing_profile
+    form = BillingSettingsForm(request.POST, instance=billing_profile)
+    
+    if form.is_valid():
+        form.save()
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Billing settings updated successfully'
+        })
+    
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Invalid form data',
+        'errors': form.errors
+    }, status=400)

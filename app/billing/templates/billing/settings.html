@@ -16,64 +16,60 @@
                     <h5 class="card-title mb-0">Billing Settings</h5>
                 </div>
                 <div class="card-body">
-                    <form method="post" id="settings-form">
-                        {% csrf_token %}
-                        
-                        <div class="form-group mb-3">
-                            <div class="form-check">
-                                {{ form.auto_recharge_enabled }}
-                                <label class="form-check-label" for="{{ form.auto_recharge_enabled.id_for_label }}">
-                                    {{ form.auto_recharge_enabled.label }}
-                                </label>
-                                {% if form.auto_recharge_enabled.help_text %}
-                                    <small class="form-text text-muted">{{ form.auto_recharge_enabled.help_text }}</small>
+                    <div data-controller="setup-payment"
+                        data-setup-payment-publishable-key-value="{{ stripe_publishable_key }}"
+                        data-setup-payment-client-secret-value="{{ setup_intent.client_secret }}"
+                        data-setup-payment-email-value="{{ user.email }}"
+                        data-setup-payment-csrf-token-value="{{ csrf_token }}"
+                        data-setup-payment-update-url-value="{% url 'billing:billing_settings_update' %}"
+                        data-setup-payment-return-url-value="{% url 'billing:billing_dashboard' %}"
+                        data-setup-payment-loading-class="is-loading"
+                        data-setup-payment-error-class="is-invalid">
+                           
+                        <form method="post" id="settings-form" class="mb-4" data-action="submit->setup-payment#handleSubmit">
+                            {% csrf_token %}
+                            
+                            <div class="form-group mb-3">
+                                <div class="form-check">
+                                    {{ form.auto_recharge_enabled }}
+                                    <label class="form-check-label" for="{{ form.auto_recharge_enabled.id_for_label }}">
+                                        {{ form.auto_recharge_enabled.label }}
+                                    </label>
+                                    {% if form.auto_recharge_enabled.help_text %}
+                                        <small class="form-text text-muted">{{ form.auto_recharge_enabled.help_text }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="form-group mb-3">
+                                <label for="{{ form.auto_recharge_amount.id_for_label }}">{{ form.auto_recharge_amount.label }}</label>
+                                {{ form.auto_recharge_amount }}
+                                {% if form.auto_recharge_amount.help_text %}
+                                    <small class="form-text text-muted">{{ form.auto_recharge_amount.help_text }}</small>
+                                {% endif %}
+                                {% if form.auto_recharge_amount.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.auto_recharge_amount.errors }}
+                                    </div>
                                 {% endif %}
                             </div>
-                        </div>
-                        
-                        <div class="form-group mb-3">
-                            <label for="{{ form.auto_recharge_amount.id_for_label }}">{{ form.auto_recharge_amount.label }}</label>
-                            {{ form.auto_recharge_amount }}
-                            {% if form.auto_recharge_amount.help_text %}
-                                <small class="form-text text-muted">{{ form.auto_recharge_amount.help_text }}</small>
-                            {% endif %}
-                            {% if form.auto_recharge_amount.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.auto_recharge_amount.errors }}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="form-group mb-3">
-                            <label for="{{ form.monthly_recharge_limit.id_for_label }}">{{ form.monthly_recharge_limit.label }}</label>
-                            {{ form.monthly_recharge_limit }}
-                            {% if form.monthly_recharge_limit.help_text %}
-                                <small class="form-text text-muted">{{ form.monthly_recharge_limit.help_text }}</small>
-                            {% endif %}
-                            {% if form.monthly_recharge_limit.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.monthly_recharge_limit.errors }}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mt-3">
-                            <button type="submit" class="btn btn-success">Save Settings</button>
-                            <a href="{% url 'billing:billing_dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
-                        </div>
-                    </form>
-
-                    {% if not billing_profile.has_payment_method %}
-                        <div class="mt-4" 
-                             data-controller="setup-payment"
-                             data-setup-payment-publishable-key-value="{{ stripe_publishable_key }}"
-                             data-setup-payment-client-secret-value="{{ setup_intent.client_secret }}"
-                             data-setup-payment-email-value="{{ user.email }}"
-                             data-setup-payment-csrf-token-value="{{ csrf_token }}">
                             
-                            <h5>Add Payment Method</h5>
+                            <div class="form-group mb-3">
+                                <label for="{{ form.monthly_recharge_limit.id_for_label }}">{{ form.monthly_recharge_limit.label }}</label>
+                                {{ form.monthly_recharge_limit }}
+                                {% if form.monthly_recharge_limit.help_text %}
+                                    <small class="form-text text-muted">{{ form.monthly_recharge_limit.help_text }}</small>
+                                {% endif %}
+                                {% if form.monthly_recharge_limit.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.monthly_recharge_limit.errors }}
+                                    </div>
+                                {% endif %}
+                            </div>
+        
+                            <h5>Payment Method</h5>
                             <div class="alert alert-info">
-                                To enable auto-recharge, please add a payment method.
+                                A payment method is required for auto-recharge.
                             </div>
                             
                             <div class="payment-form">
@@ -86,18 +82,24 @@
                                 </div>
                                 
                                 <div data-setup-payment-target="payment" class="mb-3 d-none"></div>
-                                
-                                <button data-setup-payment-target="submit"
-                                        data-action="setup-payment#handleSubmit"
-                                        class="btn btn-primary w-100 d-flex justify-content-center align-items-center">
-                                    <span data-setup-payment-target="submitSpinner" class="spinner-border spinner-border-sm me-2 d-none" role="status">
-                                        <span class="visually-hidden">Loading...</span>
-                                    </span>
-                                    <span data-setup-payment-target="submitText">Save Card</span>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-primary" data-setup-payment-target="submit">
+                                    <span class="d-none spinner-border spinner-border-sm me-1" data-setup-payment-target="submitSpinner"></span>
+                                    <span data-setup-payment-target="submitText">Save Settings</span>
+                                    <span class="d-none" data-setup-payment-target="submitProcessing">Saving...</span>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" 
+                                        data-setup-payment-target="cancel"
+                                        data-action="click->setup-payment#handleCancel">
+                                    <span class="d-none spinner-border spinner-border-sm me-1" data-setup-payment-target="cancelSpinner"></span>
+                                    <span data-setup-payment-target="cancelText">Cancel</span>
+                                    <span class="d-none" data-setup-payment-target="cancelProcessing">Cancelling...</span>
                                 </button>
                             </div>
-                        </div>
-                    {% endif %}
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,13 +1,16 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-    static targets = ['submit', 'error', 'payment', 'paymentSpinner', 'submitSpinner', 'submitText']
+    static targets = ['submit', 'cancel', 'error', 'payment', 'paymentSpinner', 'submitSpinner', 'submitText', 'submitProcessing', 'cancelSpinner', 'cancelText', 'cancelProcessing']
+    
     static classes = ['loading', 'error']
     static values = {
         publishableKey: String,
         clientSecret: String,
         email: String,
-        returnUrl: { type: String, default: '/billing/settings/' }
+        csrfToken: String,
+        updateUrl: String,
+        returnUrl: String,
     }
 
     connect() {
@@ -49,10 +52,29 @@ export default class extends Controller {
     async handleSubmit(event) {
         event.preventDefault()
         
-        this.setLoading(true)
+        this.setLoading(true, 'submit')
         this.hideError()
         
         try {
+            // First save our form data
+            const form = event.target.closest('form')
+            const formData = new FormData(form)
+
+            const response = await fetch(this.updateUrlValue, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': this.csrfTokenValue
+                }
+            })
+
+            const data = await response.json()
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to save settings')
+            }
+
+            // Then setup the card with Stripe (this will redirect)
             const { setupIntent, error } = await this.stripe.confirmSetup({
                 elements: this.elements,
                 confirmParams: {
@@ -62,30 +84,44 @@ export default class extends Controller {
 
             if (error) {
                 this.showError(error.message)
-                this.setLoading(false)
+                this.setLoading(false, 'submit')
             }
-            // No need to update status - webhook will handle it
+            // No need to handle success - Stripe will redirect
+            
         } catch (error) {
             this.showError('An unexpected error occurred. Please try again.')
-            this.setLoading(false)
+            this.setLoading(false, 'submit')
         }
     }
 
-    setLoading(isLoading) {
-        const submitButton = this.submitTarget
-        const submitSpinner = this.submitSpinnerTarget
-        const submitText = this.submitTextTarget
+    async handleCancel(event) {
+        event.preventDefault()
+        
+        this.setLoading(true, 'cancel')
+        
+        try {
+            //await this.updateTransactionStatus('cancel')
+            window.location.href = this.returnUrlValue
+        } catch (error) {
+            console.error('Cancellation error:', error)
+            this.setLoading(false, 'cancel')
+            this.showError('Failed to cancel payment')
+        }
+    }
 
-        if (isLoading) {
-            submitButton.disabled = true
-            submitButton.classList.add(this.loadingClass)
-            submitSpinner.classList.remove('d-none')
-            submitText.textContent = 'Setting up...'
-        } else {
-            submitButton.disabled = false
-            submitButton.classList.remove(this.loadingClass)
-            submitSpinner.classList.add('d-none')
-            submitText.textContent = 'Save Card'
+    setLoading(isLoading, button = 'submit') {
+        this.submitTarget.disabled = isLoading
+        this.cancelTarget.disabled = isLoading
+
+        if (button === 'submit') {
+            this.submitSpinnerTarget.classList.toggle('d-none', !isLoading)
+            this.submitTextTarget.classList.toggle('d-none', isLoading)
+            this.submitProcessingTarget.classList.toggle('d-none', !isLoading)
+        }
+        if (button === 'cancel') {
+            this.cancelSpinnerTarget.classList.toggle('d-none', !isLoading)
+            this.cancelTextTarget.classList.toggle('d-none', isLoading)
+            this.cancelProcessingTarget.classList.toggle('d-none', !isLoading)
         }
     }
 

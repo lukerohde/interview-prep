@@ -377,6 +377,12 @@ class BillingSettings(models.Model):
         default=Decimal('10.00'),
         help_text="Default amount shown in the recharge form. Must be between $5 and $1000, in increments of $5."
     )
+    default_monthly_recharge_limit = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('40.00'),
+        help_text="Default monthly recharge limit for new users. Typically 4x the default recharge amount."
+    )
     
     class Meta:
         verbose_name = "Billing Settings"
