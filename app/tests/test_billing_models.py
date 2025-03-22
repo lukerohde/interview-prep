@@ -478,6 +478,24 @@ def test_add_token_usage_auto_recharge_stripe_error(user, mock_stripe):
     assert billing_profile.balance == Decimal('0.00')
 
 
+def test_billing_profile_has_payment_method(user):
+    """Test has_payment_method property."""
+    billing_profile = BillingProfile.objects.get(user=user)
+    
+    # Initially no payment method
+    assert not billing_profile.has_payment_method
+    
+    # Add payment method
+    billing_profile.stripe_payment_method_id = 'pm_test_123'
+    billing_profile.save()
+    assert billing_profile.has_payment_method
+    
+    # Remove payment method
+    billing_profile.stripe_payment_method_id = None
+    billing_profile.save()
+    assert not billing_profile.has_payment_method
+
+
 def test_add_token_usage_auto_recharge_success(user, mock_stripe):
     """Test successful auto-recharge flow."""
     billing_profile = BillingProfile.objects.get(user=user)

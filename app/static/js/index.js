@@ -5,6 +5,7 @@ import TranscriptController from '../../main/js/controllers/transcript_controlle
 import PromptOverrideController from '../../main/js/controllers/prompt_override_controller'
 import DocumentController from '../../main/js/controllers/document_controller'
 import RechargeController from '../../billing/js/controllers/recharge_controller'
+import SetupPaymentController from '../../billing/js/controllers/setup_payment_controller'
 
 console.log('Loading Stimulus application...')
 let application = null
@@ -40,7 +41,7 @@ application.register('transcript', TranscriptController)
 application.register('prompt-override', PromptOverrideController)
 application.register('document', DocumentController)
 application.register('recharge', RechargeController)
-console.log('after recharge')
+application.register('setup-payment', SetupPaymentController)
 console.log('Controllers registered successfully')
 
 

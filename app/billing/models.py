@@ -30,6 +30,11 @@ class BillingProfile(models.Model):
     def balance(self):
         """Calculate the current balance as total_credits - total_usage"""
         return self.total_credits - self.total_usage
+    
+    @property
+    def has_payment_method(self):
+        """Check if the user has a payment method configured."""
+        return bool(self.stripe_payment_method_id)
 
     def add_credits(self, amount, transaction_type='recharge'):
         """
